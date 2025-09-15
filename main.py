@@ -10,36 +10,44 @@ def main():
     # Start the game
     pygame.init()
     
-    #Set screen resolution
+    # Set screen resolution
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
-    #Clock
+    # Clock
     clock = pygame.time.Clock()
 
     dt = 0
 
-    #Setting starting position
+    # Adding object groups
+    updatable = pygame.sprite.Group()
+    drawable = pygame.sprite.Group()
+    
+    # Adding player to groups
+    Player.containers = (updatable, drawable)
+
+    # Setting starting position
     x = SCREEN_WIDTH / 2
     y = SCREEN_HEIGHT / 2
-
-    #Adding Player object
+    
+    # Adding Player object
     player = Player(x, y)
 
-    #Gameplay loop
+    # Gameplay loop
     while True:
         #Close app window
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return
 
-        #Set background colour    
+        # Set background colour    
         screen.fill("black")
         
-        #Updating player postion
-        player.update(dt)
+        # Updating group postion
+        updatable.update(dt)
 
-        #Drawing the player position
-        player.draw(screen)
+        # Drawing the group position
+        for spr in drawable:
+            spr.draw(screen)
 
         pygame.display.flip()
 
