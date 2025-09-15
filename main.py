@@ -1,5 +1,6 @@
 import pygame
 from constants import *
+from player import *
 
 def main():
     print("Starting Asteroids!")
@@ -17,6 +18,13 @@ def main():
 
     dt = 0
 
+    #Setting starting position
+    x = SCREEN_WIDTH / 2
+    y = SCREEN_HEIGHT / 2
+
+    #Adding Player object
+    player = Player(x, y)
+
     #Gameplay loop
     while True:
         #Close app window
@@ -27,7 +35,9 @@ def main():
         #Set background colour    
         screen.fill("black")
         
-        
+        #Drawing the player position
+        player.draw(screen)
+
         pygame.display.flip()
 
         #Framerate
