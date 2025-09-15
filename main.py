@@ -1,8 +1,10 @@
 import pygame
+import sys
 from constants import *
 from player import *
 from asteroid import *
 from asteroidfield import *
+from circleshape import *
 
 def main():
     print("Starting Asteroids!")
@@ -42,7 +44,7 @@ def main():
 
     # Gameplay loop
     while True:
-        #Close app window
+        # Close app window
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return
@@ -52,6 +54,12 @@ def main():
         
         # Updating group postion
         updatable.update(dt)
+
+        # Checking for player collision
+        for ast in asteroids:
+            if player.collision_check(ast):
+                print("Game over!")
+                sys.exit()
 
         # Drawing the group position
         for spr in drawable:
