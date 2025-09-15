@@ -35,6 +35,9 @@ def main():
         #Set background colour    
         screen.fill("black")
         
+        #Updating player postion
+        player.update(dt)
+
         #Drawing the player position
         player.draw(screen)
 
