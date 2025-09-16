@@ -17,6 +17,13 @@ class Asteroid(CircleShape):
         self.position += self.velocity * dt
         self.wrap_position()
 
+    def score_value(self):
+        if self.radius > ASTEROID_MIN_RADIUS * 2:
+            return ASTEROID_SCORE_LARGE
+        if self.radius > ASTEROID_MIN_RADIUS:
+            return ASTEROID_SCORE_MEDIUM
+        return ASTEROID_SCORE_SMALL
+
     # Asteroid spliting logic
     def split(self):
         old_radius = self.radius

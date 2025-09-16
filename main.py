@@ -32,6 +32,7 @@ def main():
         return pygame.font.Font(None, size)
 
     font_regular = load_font(ORBITRON_FONT_PATH, HUD_FONT_SIZE)
+    font_subheader = load_font(ORBITRON_FONT_PATH, SUBHEADER_FONT_SIZE)
     font_semibold = load_font(ORBITRON_SEMIBOLD_FONT_PATH, HEADER_FONT_SIZE)
     hud_shadow_color = pygame.Color(120, 160, 255, 70)
     hud_text_color = pygame.Color(255, 255, 255, 220)
@@ -47,12 +48,31 @@ def main():
         for _ in range(8)
     ]
 
+    def make_hud_text(font, text):
+        shadow = font.render(text, True, hud_shadow_color).convert_alpha()
+        text_surface = font.render(text, True, hud_text_color).convert_alpha()
+        return shadow, text_surface
+
+    def draw_subheader(rect, text):
+        shadow, surface = make_hud_text(font_subheader, text)
+        header_rect = surface.get_rect()
+        header_rect.centerx = rect.centerx
+        header_rect.top = rect.top + 6
+        shadow_rect = header_rect.copy()
+        shadow_rect.move_ip(0, 1)
+        screen.blit(shadow, shadow_rect)
+        screen.blit(surface, header_rect)
+
     dt = 0
     lives = PLAYER_START_LIVES
     life_loss_active = False
     life_loss_elapsed = 0
     level_index = 0
     total_levels = len(LEVEL_DEFINITIONS)
+    score = 0
+    high_score = 0
+    life_lost_this_level = False
+    bombs = 0
 
     # Creating object groups
     updatable = pygame.sprite.Group()
@@ -78,10 +98,12 @@ def main():
     asteroid_field = AsteroidField(asteroids)
 
     def configure_level(index):
+        nonlocal life_lost_this_level
         config = LEVEL_DEFINITIONS[index]
         asteroid_field.configure_level(
             config["spawn_total"], config["max_active"], config["speed_multiplier"]
         )
+        life_lost_this_level = False
 
     level_transition = None
 
@@ -127,11 +149,15 @@ def main():
             player.reset(spawn_x, spawn_y)
             life_loss_active = True
             life_loss_elapsed = 0
+            life_lost_this_level = True
 
         # Checking for bullet collision
         for ast in asteroids:
             for shot in shots:
                 if ast.collision_check(shot):
+                    score += ast.score_value()
+                    if score > high_score:
+                        high_score = score
                     ast.split()
                     shot.kill()
 
@@ -160,6 +186,12 @@ def main():
             if level_index + 1 >= total_levels:
                 print("All levels cleared! You win!")
                 return
+            bonus = LEVEL_CLEAR_BONUS * (level_index + 1)
+            if life_lost_this_level:
+                bonus //= 2
+            score += bonus
+            if score > high_score:
+                high_score = score
             next_level = level_index + 1
             player.reset(spawn_x, spawn_y)
             for shot in shots:
@@ -215,6 +247,14 @@ def main():
             )
 
         screen.blit(gradient_surface, (0, 0))
+        section_width = SCREEN_WIDTH // 5
+        sections = []
+        for i in range(5):
+            rect = pygame.Rect(i * section_width, 0, section_width, STATUS_BAR_HEIGHT)
+            sections.append(rect)
+            border_surface = pygame.Surface(rect.size, pygame.SRCALPHA)
+            pygame.draw.rect(border_surface, (255, 255, 255, 40), border_surface.get_rect(), 1)
+            screen.blit(border_surface, rect)
 
         icon_count = lives + (1 if life_loss_active else 0)
         flash_on = True
@@ -222,36 +262,68 @@ def main():
             flashes = int(life_loss_elapsed / LIFE_ICON_FLICKER_INTERVAL)
             flash_on = flashes % 2 == 0
 
-        icon_center_y = STATUS_BAR_HEIGHT / 2 + 4
+        life_section = sections[0]
+        draw_subheader(life_section, "LIVES")
+        icon_center_y = life_section.centery + 10
+        start_x = life_section.centerx
+        if icon_count:
+            total_spacing = (icon_count - 1) * LIFE_ICON_SPACING
+            start_x = life_section.centerx - total_spacing / 2
         for i in range(icon_count):
-            cx = 40 + i * LIFE_ICON_SPACING
+            cx = start_x + i * LIFE_ICON_SPACING
             if life_loss_active and i == icon_count - 1:
                 if flash_on:
                     draw_life_icon(screen, cx, icon_center_y, LIFE_ICON_FLICKER_COLOR)
             else:
                 draw_life_icon(screen, cx, icon_center_y, "white")
 
-        level_string = "LEVEL " + " " .join(list(str(level_index + 1)))
-        level_surface_shadow = font_regular.render(level_string, True, hud_shadow_color)
-        level_surface = font_regular.render(level_string, True, hud_text_color)
-        level_pos = level_surface.get_rect()
-        level_pos.centery = STATUS_BAR_HEIGHT / 2
-        level_pos.right = SCREEN_WIDTH - 32
-        shadow_pos = level_pos.copy()
-        shadow_pos.move_ip(0, 1)
-        screen.blit(level_surface_shadow, shadow_pos)
-        screen.blit(level_surface, level_pos)
+        power_section = sections[1]
+        draw_subheader(power_section, "BOMBS")
+        bomb_icon_size = 14
+        bomb_spacing = 18
+        bomb_count = bombs
+        start_x = power_section.centerx
+        if bomb_count:
+            total_spacing = (bomb_count - 1) * bomb_spacing
+            start_x = power_section.centerx - total_spacing / 2
+        for i in range(bomb_count):
+            cx = start_x + i * bomb_spacing
+            bomb_rect = pygame.Rect(0, 0, bomb_icon_size, bomb_icon_size)
+            bomb_rect.center = (cx, power_section.centery + 12)
+            pygame.draw.rect(screen, "white", bomb_rect, 2)
 
-        separator_dot = pygame.Rect(0, 0, 4, 4)
-        separator_dot.center = (SCREEN_WIDTH - 180, STATUS_BAR_HEIGHT / 2 + 2)
-        separator_surface = pygame.Surface(separator_dot.size, pygame.SRCALPHA)
-        pygame.draw.circle(
-            separator_surface,
-            separator_color,
-            (separator_dot.width // 2, separator_dot.height // 2),
-            separator_dot.width // 2,
-        )
-        screen.blit(separator_surface, separator_dot)
+        level_number = f"{level_index + 1:02d}"
+        level_string = f"LEVEL {level_number}"
+        level_shadow, level_surface = make_hud_text(font_regular, level_string)
+        level_rect = level_surface.get_rect()
+        level_section = sections[4]
+        level_rect.center = (level_section.centerx, level_section.centery + 8)
+        shadow_rect = level_rect.copy()
+        shadow_rect.move_ip(0, 1)
+        screen.blit(level_shadow, shadow_rect)
+        screen.blit(level_surface, level_rect)
+
+        high_string = f"{high_score:06d}"
+        hi_shadow, hi_surface = make_hud_text(font_regular, high_string)
+        hi_rect = hi_surface.get_rect()
+        hi_section = sections[2]
+        draw_subheader(hi_section, "HIGH SCORE")
+        hi_rect.center = (hi_section.centerx, hi_section.centery + 8)
+        hi_shadow_rect = hi_rect.copy()
+        hi_shadow_rect.move_ip(0, 1)
+        screen.blit(hi_shadow, hi_shadow_rect)
+        screen.blit(hi_surface, hi_rect)
+
+        score_string = f"{score:06d}"
+        score_shadow, score_surface = make_hud_text(font_regular, score_string)
+        score_rect = score_surface.get_rect()
+        score_section = sections[3]
+        draw_subheader(score_section, "SCORE")
+        score_rect.center = (score_section.centerx, score_section.centery + 8)
+        score_shadow_rect = score_rect.copy()
+        score_shadow_rect.move_ip(0, 1)
+        screen.blit(score_shadow, score_shadow_rect)
+        screen.blit(score_surface, score_rect)
 
         if level_transition:
             alpha_ratio = max(
@@ -260,13 +332,10 @@ def main():
             )
             alpha = int(255 * alpha_ratio)
             if level_transition["phase"] == "top":
-                header_surface_shadow = font_semibold.render(
-                    level_transition["header"], True, hud_shadow_color
-                ).convert_alpha()
-                header_surface_shadow.set_alpha(alpha)
-                header_surface = font_semibold.render(
-                    level_transition["header"], True, hud_text_color
-                ).convert_alpha()
+                header_shadow, header_surface = make_hud_text(
+                    font_semibold, level_transition["header"]
+                )
+                header_shadow.set_alpha(alpha)
                 header_surface.set_alpha(alpha)
                 top_y = STATUS_BAR_HEIGHT + (
                     (player.position.y - STATUS_BAR_HEIGHT) / 2
@@ -275,26 +344,20 @@ def main():
                 header_rect.center = (SCREEN_WIDTH / 2, top_y)
                 shadow_rect = header_rect.copy()
                 shadow_rect.move_ip(0, 1)
-                screen.blit(header_surface_shadow, shadow_rect)
+                screen.blit(header_shadow, shadow_rect)
                 screen.blit(header_surface, header_rect)
             elif level_transition["phase"] == "bottom":
-                level_string = "LEVEL " + " " .join(
-                    list(str(level_transition["next_level"] + 1))
-                )
-                level_surface_shadow = font_semibold.render(
-                    level_string, True, hud_shadow_color
-                ).convert_alpha()
-                level_surface_shadow.set_alpha(alpha)
-                level_surface = font_semibold.render(
-                    level_string, True, hud_text_color
-                ).convert_alpha()
+                level_number = f"{level_transition['next_level'] + 1:02d}"
+                level_string = f"LEVEL {level_number}"
+                level_shadow, level_surface = make_hud_text(font_semibold, level_string)
+                level_shadow.set_alpha(alpha)
                 level_surface.set_alpha(alpha)
                 bottom_y = (player.position.y + SCREEN_HEIGHT) / 2
                 level_rect = level_surface.get_rect()
                 level_rect.center = (SCREEN_WIDTH / 2, bottom_y)
                 shadow_rect = level_rect.copy()
                 shadow_rect.move_ip(0, 1)
-                screen.blit(level_surface_shadow, shadow_rect)
+                screen.blit(level_shadow, shadow_rect)
                 screen.blit(level_surface, level_rect)
 
         pygame.display.flip()

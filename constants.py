@@ -29,6 +29,7 @@ LIFE_ICON_FLICKER_COLOR = (160, 32, 32)
 PLAYER_SHIELD_RADIUS_PADDING = 20
 PLAYER_INVULNERABILITY_FADE_WINDOW = 2.0
 HUD_FONT_SIZE = 24
+SUBHEADER_FONT_SIZE = 16
 HEADER_FONT_SIZE = 48
 ORBITRON_FONT_PATH = "assets/Orbitron-Regular.ttf"
 ORBITRON_SEMIBOLD_FONT_PATH = "assets/Orbitron-SemiBold.ttf"
@@ -46,3 +47,8 @@ LEVEL_DEFINITIONS = [
     {"spawn_total": 35, "max_active": 25, "speed_multiplier": 1.8},
     {"spawn_total": 35, "max_active": 25, "speed_multiplier": 2.0},
 ]
+
+ASTEROID_SCORE_LARGE = 1
+ASTEROID_SCORE_MEDIUM = 3
+ASTEROID_SCORE_SMALL = 5
+LEVEL_CLEAR_BONUS = 1000
