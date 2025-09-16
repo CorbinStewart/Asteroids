@@ -20,6 +20,7 @@ from constants import (
     SCREEN_HEIGHT,
     LEVEL_MESSAGE_DURATION,
 )
+from hud_icons import TriangleIcon, SquareIcon
 
 
 class Hud:
@@ -46,6 +47,8 @@ class Hud:
             pygame.Rect(i * section_width, 0, section_width, STATUS_BAR_HEIGHT)
             for i in range(5)
         ]
+        self.life_icon = TriangleIcon(LIFE_ICON_SIZE)
+        self.bomb_icon = SquareIcon(14)
 
     def _load_font(self, path_str: str, size: int) -> pygame.font.Font:
         path = Path(path_str)
@@ -119,15 +122,6 @@ class Hud:
         surface.blit(shadow, shadow_rect)
         surface.blit(rendered, rendered_rect)
 
-    def _draw_life_icon(self, surface, cx, cy, color):
-        base = LIFE_ICON_SIZE * 0.6
-        points = [
-            (cx, cy - LIFE_ICON_SIZE),
-            (cx - base, cy + LIFE_ICON_SIZE),
-            (cx + base, cy + LIFE_ICON_SIZE),
-        ]
-        pygame.draw.polygon(surface, color, points, 2)
-
     def _draw_lives(self, surface, rect, state):
         self.draw_subheader(surface, rect, "LIVES")
         icon_count = state.lives + (1 if state.life_loss_active else 0)
@@ -143,11 +137,10 @@ class Hud:
         for i in range(icon_count):
             cx = start_x + i * LIFE_ICON_SPACING
             color = LIFE_ICON_FLICKER_COLOR if state.life_loss_active and i == icon_count - 1 and flash_on else "white"
-            self._draw_life_icon(surface, cx, icon_center_y, color)
+            self.life_icon.draw(surface, (int(cx), int(icon_center_y)), color)
 
     def _draw_bombs(self, surface, rect, state):
         self.draw_subheader(surface, rect, "BOMBS")
-        bomb_icon_size = 14
         bomb_spacing = 18
         count = state.bombs
         start_x = rect.centerx
@@ -156,9 +149,7 @@ class Hud:
             start_x = rect.centerx - total_spacing / 2
         for i in range(count):
             cx = start_x + i * bomb_spacing
-            bomb_rect = pygame.Rect(0, 0, bomb_icon_size, bomb_icon_size)
-            bomb_rect.center = (cx, rect.centery + 12)
-            pygame.draw.rect(surface, "white", bomb_rect, 2)
+            self.bomb_icon.draw(surface, (int(cx), int(rect.centery + 12)), "white")
 
     def _draw_transition_text(self, surface, text, alpha, center_y):
         shadow, rendered = self.make_hud_text(self.font_semibold, text)
