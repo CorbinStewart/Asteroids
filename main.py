@@ -63,6 +63,14 @@ def main():
                 print("Game over!")
                 sys.exit()
 
+        # Checking for bullet collision
+        for ast in asteroids:
+            for shot in shots:
+                if ast.collision_check(shot):
+                    ast.split()
+                    shot.kill()
+
+
         # Drawing the group position
         for spr in drawable:
             spr.draw(screen)
