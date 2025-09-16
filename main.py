@@ -7,6 +7,7 @@ from player import *
 from asteroid import *
 from asteroidfield import *
 from circleshape import *
+from game_state import GameState
 
 def main():
     print("Starting Asteroids!")
@@ -48,6 +49,8 @@ def main():
         for _ in range(8)
     ]
 
+    state = GameState()
+
     def make_hud_text(font, text):
         shadow = font.render(text, True, hud_shadow_color).convert_alpha()
         text_surface = font.render(text, True, hud_text_color).convert_alpha()
@@ -64,15 +67,7 @@ def main():
         screen.blit(surface, header_rect)
 
     dt = 0
-    lives = PLAYER_START_LIVES
-    life_loss_active = False
-    life_loss_elapsed = 0
-    level_index = 0
     total_levels = len(LEVEL_DEFINITIONS)
-    score = 0
-    high_score = 0
-    life_lost_this_level = False
-    bombs = 0
 
     # Creating object groups
     updatable = pygame.sprite.Group()
@@ -98,16 +93,15 @@ def main():
     asteroid_field = AsteroidField(asteroids)
 
     def configure_level(index):
-        nonlocal life_lost_this_level
+        state.reset_for_level(index)
         config = LEVEL_DEFINITIONS[index]
         asteroid_field.configure_level(
             config["spawn_total"], config["max_active"], config["speed_multiplier"]
         )
-        life_lost_this_level = False
 
     level_transition = None
 
-    configure_level(level_index)
+    configure_level(state.level_index)
 
     def draw_life_icon(surface, cx, cy, color):
         base = LIFE_ICON_SIZE * 0.6
@@ -142,30 +136,21 @@ def main():
                     break
 
         if player_hit:
-            lives -= 1
-            if lives <= 0:
+            state.lose_life()
+            if state.lives <= 0:
                 print("Game over!")
                 return
             player.reset(spawn_x, spawn_y)
-            life_loss_active = True
-            life_loss_elapsed = 0
-            life_lost_this_level = True
 
         # Checking for bullet collision
         for ast in asteroids:
             for shot in shots:
                 if ast.collision_check(shot):
-                    score += ast.score_value()
-                    if score > high_score:
-                        high_score = score
+                    state.add_score(ast.score_value())
                     ast.split()
                     shot.kill()
 
-        if life_loss_active:
-            life_loss_elapsed += dt
-            if life_loss_elapsed >= LIFE_ICON_FLICKER_DURATION:
-                life_loss_active = False
-                life_loss_elapsed = 0
+        state.update(dt)
 
         if level_transition:
             level_transition["timer"] += dt
@@ -175,24 +160,18 @@ def main():
                     level_transition["timer"] = 0
             elif level_transition["phase"] == "bottom":
                 if level_transition["timer"] >= LEVEL_MESSAGE_DURATION:
-                    level_index = level_transition["next_level"]
-                    configure_level(level_index)
+                    configure_level(level_transition["next_level"])
                     level_transition = None
 
         if (
             level_transition is None
             and asteroid_field.level_complete()
         ):
-            if level_index + 1 >= total_levels:
+            if state.level_index + 1 >= total_levels:
                 print("All levels cleared! You win!")
                 return
-            bonus = LEVEL_CLEAR_BONUS * (level_index + 1)
-            if life_lost_this_level:
-                bonus //= 2
-            score += bonus
-            if score > high_score:
-                high_score = score
-            next_level = level_index + 1
+            state.apply_level_bonus(state.level_index + 1)
+            next_level = state.level_index + 1
             player.reset(spawn_x, spawn_y)
             for shot in shots:
                 shot.kill()
@@ -256,10 +235,10 @@ def main():
             pygame.draw.rect(border_surface, (255, 255, 255, 40), border_surface.get_rect(), 1)
             screen.blit(border_surface, rect)
 
-        icon_count = lives + (1 if life_loss_active else 0)
+        icon_count = state.lives + (1 if state.life_loss_active else 0)
         flash_on = True
-        if life_loss_active:
-            flashes = int(life_loss_elapsed / LIFE_ICON_FLICKER_INTERVAL)
+        if state.life_loss_active:
+            flashes = int(state.life_loss_elapsed / LIFE_ICON_FLICKER_INTERVAL)
             flash_on = flashes % 2 == 0
 
         life_section = sections[0]
@@ -271,7 +250,7 @@ def main():
             start_x = life_section.centerx - total_spacing / 2
         for i in range(icon_count):
             cx = start_x + i * LIFE_ICON_SPACING
-            if life_loss_active and i == icon_count - 1:
+            if state.life_loss_active and i == icon_count - 1:
                 if flash_on:
                     draw_life_icon(screen, cx, icon_center_y, LIFE_ICON_FLICKER_COLOR)
             else:
@@ -281,7 +260,7 @@ def main():
         draw_subheader(power_section, "BOMBS")
         bomb_icon_size = 14
         bomb_spacing = 18
-        bomb_count = bombs
+        bomb_count = state.bombs
         start_x = power_section.centerx
         if bomb_count:
             total_spacing = (bomb_count - 1) * bomb_spacing
@@ -292,7 +271,7 @@ def main():
             bomb_rect.center = (cx, power_section.centery + 12)
             pygame.draw.rect(screen, "white", bomb_rect, 2)
 
-        level_number = f"{level_index + 1:02d}"
+        level_number = f"{state.level_index + 1:02d}"
         level_string = f"LEVEL {level_number}"
         level_shadow, level_surface = make_hud_text(font_regular, level_string)
         level_rect = level_surface.get_rect()
@@ -303,7 +282,7 @@ def main():
         screen.blit(level_shadow, shadow_rect)
         screen.blit(level_surface, level_rect)
 
-        high_string = f"{high_score:06d}"
+        high_string = f"{state.high_score:06d}"
         hi_shadow, hi_surface = make_hud_text(font_regular, high_string)
         hi_rect = hi_surface.get_rect()
         hi_section = sections[2]
@@ -314,7 +293,7 @@ def main():
         screen.blit(hi_shadow, hi_shadow_rect)
         screen.blit(hi_surface, hi_rect)
 
-        score_string = f"{score:06d}"
+        score_string = f"{state.score:06d}"
         score_shadow, score_surface = make_hud_text(font_regular, score_string)
         score_rect = score_surface.get_rect()
         score_section = sections[3]
