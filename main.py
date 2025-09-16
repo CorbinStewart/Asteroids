@@ -8,6 +8,7 @@ from asteroid import *
 from asteroidfield import *
 from circleshape import *
 from game_state import GameState
+from level_manager import LevelManager
 
 def main():
     print("Starting Asteroids!")
@@ -67,7 +68,6 @@ def main():
         screen.blit(surface, header_rect)
 
     dt = 0
-    total_levels = len(LEVEL_DEFINITIONS)
 
     # Creating object groups
     updatable = pygame.sprite.Group()
@@ -91,17 +91,9 @@ def main():
 
     # Adding AsteroidField object
     asteroid_field = AsteroidField(asteroids)
+    level_manager = LevelManager(state, asteroid_field)
 
-    def configure_level(index):
-        state.reset_for_level(index)
-        config = LEVEL_DEFINITIONS[index]
-        asteroid_field.configure_level(
-            config["spawn_total"], config["max_active"], config["speed_multiplier"]
-        )
-
-    level_transition = None
-
-    configure_level(state.level_index)
+    level_manager.configure_level(state.level_index)
 
     def draw_life_icon(surface, cx, cy, color):
         base = LIFE_ICON_SIZE * 0.6
@@ -152,37 +144,18 @@ def main():
 
         state.update(dt)
 
-        if level_transition:
-            level_transition["timer"] += dt
-            if level_transition["phase"] == "top":
-                if level_transition["timer"] >= LEVEL_MESSAGE_DURATION:
-                    level_transition["phase"] = "bottom"
-                    level_transition["timer"] = 0
-            elif level_transition["phase"] == "bottom":
-                if level_transition["timer"] >= LEVEL_MESSAGE_DURATION:
-                    configure_level(level_transition["next_level"])
-                    level_transition = None
+        level_manager.update(dt)
 
-        if (
-            level_transition is None
-            and asteroid_field.level_complete()
-        ):
-            if state.level_index + 1 >= total_levels:
+        if level_manager.should_start_transition():
+            if not level_manager.levels_remaining():
                 print("All levels cleared! You win!")
                 return
-            state.apply_level_bonus(state.level_index + 1)
+            level_manager.apply_level_completion()
             next_level = state.level_index + 1
             player.reset(spawn_x, spawn_y)
             for shot in shots:
                 shot.kill()
-            level_transition = {
-                "next_level": next_level,
-                "timer": 0.0,
-                "phase": "top",
-                "header": random.choice(
-                    ["Good Work!", "Nice Shooting!", "Level Complete!"]
-                ),
-            }
+            level_manager.start_transition(next_level)
 
 
         # Drawing the group position
@@ -304,15 +277,16 @@ def main():
         screen.blit(score_shadow, score_shadow_rect)
         screen.blit(score_surface, score_rect)
 
-        if level_transition:
+        transition = level_manager.transition
+        if transition:
             alpha_ratio = max(
                 0.0,
-                1.0 - (level_transition["timer"] / LEVEL_MESSAGE_DURATION),
+                1.0 - (transition.timer / LEVEL_MESSAGE_DURATION),
             )
             alpha = int(255 * alpha_ratio)
-            if level_transition["phase"] == "top":
+            if transition.phase == "top":
                 header_shadow, header_surface = make_hud_text(
-                    font_semibold, level_transition["header"]
+                    font_semibold, transition.header
                 )
                 header_shadow.set_alpha(alpha)
                 header_surface.set_alpha(alpha)
@@ -325,8 +299,8 @@ def main():
                 shadow_rect.move_ip(0, 1)
                 screen.blit(header_shadow, shadow_rect)
                 screen.blit(header_surface, header_rect)
-            elif level_transition["phase"] == "bottom":
-                level_number = f"{level_transition['next_level'] + 1:02d}"
+            elif transition.phase == "bottom":
+                level_number = f"{transition.next_level + 1:02d}"
                 level_string = f"LEVEL {level_number}"
                 level_shadow, level_surface = make_hud_text(font_semibold, level_string)
                 level_shadow.set_alpha(alpha)
