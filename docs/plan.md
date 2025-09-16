@@ -26,7 +26,7 @@
   - Leave hooks for additional HUD modules (e.g., shields, upgrades).
 
 ## Epic C – Asset & Utility Organization
-- **Story C1 – Asset loader**
+- ✅ **Story C1 – Asset loader**
   - Create `assets.py` with cached loaders for fonts, images, and sounds (starting with Orbitron fonts).
   - Update modules to request assets through this helper rather than calling `pygame.font.Font` directly.
 - **Story C2 – Utility module**

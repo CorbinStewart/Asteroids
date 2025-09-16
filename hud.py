@@ -1,7 +1,8 @@
-from pathlib import Path
 import random
 
 import pygame
+
+from assets import load_font
 
 from constants import (
     HEADER_FONT_SIZE,
@@ -25,9 +26,9 @@ from hud_icons import TriangleIcon, SquareIcon
 
 class Hud:
     def __init__(self) -> None:
-        self.font_regular = self._load_font(ORBITRON_FONT_PATH, HUD_FONT_SIZE)
-        self.font_subheader = self._load_font(ORBITRON_FONT_PATH, SUBHEADER_FONT_SIZE)
-        self.font_semibold = self._load_font(ORBITRON_SEMIBOLD_FONT_PATH, HEADER_FONT_SIZE)
+        self.font_regular = load_font(ORBITRON_FONT_PATH, HUD_FONT_SIZE)
+        self.font_subheader = load_font(ORBITRON_FONT_PATH, SUBHEADER_FONT_SIZE)
+        self.font_semibold = load_font(ORBITRON_SEMIBOLD_FONT_PATH, HEADER_FONT_SIZE)
         self.hud_shadow_color = pygame.Color(120, 160, 255, 70)
         self.hud_text_color = pygame.Color(255, 255, 255, 220)
         self.section_border_color = (255, 255, 255, 40)
@@ -50,14 +51,6 @@ class Hud:
         self.life_icon = TriangleIcon(LIFE_ICON_SIZE)
         self.bomb_icon = SquareIcon(14)
 
-    def _load_font(self, path_str: str, size: int) -> pygame.font.Font:
-        path = Path(path_str)
-        if path.exists():
-            try:
-                return pygame.font.Font(path.as_posix(), size)
-            except Exception:
-                pass
-        return pygame.font.Font(None, size)
 
     def make_hud_text(self, font, text: str):
         shadow = font.render(text, True, self.hud_shadow_color).convert_alpha()
