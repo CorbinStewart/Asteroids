@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from constants import LEVEL_MESSAGE_DURATION, LEVEL_DEFINITIONS
 from asteroidfield import AsteroidField
 from game_state import GameState
+from score_manager import ScoreManager
 
 
 @dataclass
@@ -17,9 +18,10 @@ class LevelTransition:
 
 
 class LevelManager:
-    def __init__(self, state: GameState, asteroid_field: AsteroidField):
+    def __init__(self, state: GameState, asteroid_field: AsteroidField, score_manager: ScoreManager):
         self.state = state
         self.asteroid_field = asteroid_field
+        self.score_manager = score_manager
         self.transition: LevelTransition | None = None
         self.total_levels = len(LEVEL_DEFINITIONS)
 
@@ -57,5 +59,4 @@ class LevelManager:
         return self.state.level_index + 1 < self.total_levels
 
     def apply_level_completion(self) -> None:
-        self.state.apply_level_bonus(self.state.level_index + 1)
-
+        self.score_manager.apply_level_bonus()

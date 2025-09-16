@@ -1,10 +1,6 @@
 from dataclasses import dataclass
 
-from constants import (
-    LEVEL_CLEAR_BONUS,
-    LIFE_ICON_FLICKER_DURATION,
-    PLAYER_START_LIVES,
-)
+from constants import LIFE_ICON_FLICKER_DURATION, PLAYER_START_LIVES
 
 
 @dataclass
@@ -38,13 +34,6 @@ class GameState:
         self.score += amount
         if self.score > self.high_score:
             self.high_score = self.score
-
-    def apply_level_bonus(self, level_number: int) -> int:
-        bonus = LEVEL_CLEAR_BONUS * level_number
-        if self.life_lost_this_level:
-            bonus //= 2
-        self.add_score(bonus)
-        return bonus
 
     def update(self, dt: float) -> None:
         if self.life_loss_active:

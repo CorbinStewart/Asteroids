@@ -9,6 +9,7 @@ from asteroidfield import *
 from circleshape import *
 from game_state import GameState
 from level_manager import LevelManager
+from score_manager import ScoreManager
 
 def main():
     print("Starting Asteroids!")
@@ -51,6 +52,7 @@ def main():
     ]
 
     state = GameState()
+    score_manager = ScoreManager(state)
 
     def make_hud_text(font, text):
         shadow = font.render(text, True, hud_shadow_color).convert_alpha()
@@ -91,7 +93,7 @@ def main():
 
     # Adding AsteroidField object
     asteroid_field = AsteroidField(asteroids)
-    level_manager = LevelManager(state, asteroid_field)
+    level_manager = LevelManager(state, asteroid_field, score_manager)
 
     level_manager.configure_level(state.level_index)
 
@@ -138,7 +140,7 @@ def main():
         for ast in asteroids:
             for shot in shots:
                 if ast.collision_check(shot):
-                    state.add_score(ast.score_value())
+                    score_manager.add_asteroid_points(ast)
                     ast.split()
                     shot.kill()
 
