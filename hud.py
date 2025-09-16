@@ -60,7 +60,7 @@ class Hud:
             for i in range(5)
         ]
         self.life_icon = TriangleIcon(LIFE_ICON_SIZE)
-        self.bomb_icon = BombIcon(18)
+        self.bomb_icon = BombIcon(24, line_width=2)
 
 
     def make_hud_text(self, font: "Font", text: str) -> tuple[pygame.Surface, pygame.Surface]:
@@ -152,21 +152,29 @@ class Hud:
 
     def _draw_bombs(self, surface: "Surface", rect: pygame.Rect, state: "GameState") -> None:
         self.draw_subheader(surface, rect, "BOMBS")
-        bomb_spacing = 18
         count = state.bombs
-        start_x = rect.centerx
-        if count:
-            total_spacing = (count - 1) * bomb_spacing
-            start_x = rect.centerx - total_spacing / 2
+        if count <= 0:
+            return
+
+        icon_size = self.bomb_icon.size
+        spacing = icon_size + 8
+        total_width = icon_size + (count - 1) * spacing
+        start_x = rect.centerx - total_width / 2 + icon_size / 2
+
         flash = state.bomb_flash_timer > 0 and int(state.bomb_flash_timer * 10) % 2 == 0
-        base_color = (80, 80, 160) if count else (100, 100, 100)
-        flash_color = (200, 80, 20)
-        for i in range(max(1, count)):
-            cx = start_x + i * bomb_spacing
-            color = flash_color if flash else base_color
-            if count == 0 and i > 0:
-                break
-            self.bomb_icon.draw(surface, (int(cx), int(rect.centery + 12)), color)
+        stroke_ready = (220, 50, 50)
+        letter_ready = (255, 220, 60)
+
+        for i in range(count):
+            cx = start_x + i * spacing
+            letter_color = (255, 255, 180) if flash else letter_ready
+            icon_surface = self.bomb_icon.create_surface(
+                stroke_ready,
+                letter_color,
+                None,
+            )
+            icon_rect = icon_surface.get_rect(center=(int(cx), int(rect.centery + 12)))
+            surface.blit(icon_surface, icon_rect)
 
     def _draw_transition_text(self, surface: "Surface", text: str, alpha: int, center_y: float) -> None:
         shadow, rendered = self.make_hud_text(self.font_semibold, text)

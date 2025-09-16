@@ -97,3 +97,22 @@ def test_wave_only_reduces_large_asteroid_once():
     # Apply again; the new fragments should not be processed further by the same wave.
     controller.apply_wave_effects(asteroids, score, state, pickups, rng)
     assert len([a for a in asteroids if a.alive()]) == 2
+
+
+def test_wave_can_spawn_pickup_when_drop_occurs():
+    clock = GameClock()
+    controller = BombController(clock)
+    state = GameState(bombs=0)
+    score = ScoreManager(state)
+    asteroids = _setup_asteroid_groups()
+    pickups = pygame.sprite.Group()
+    rng = random.Random()
+    rng.random = lambda: 0.0  # ensure drop
+
+    small = Asteroid(0, 0, ASTEROID_MIN_RADIUS)
+
+    controller.trigger(pygame.Vector2(0, 0))
+    controller.update(0.5)
+    controller.apply_wave_effects(asteroids, score, state, pickups, rng)
+
+    assert len(pickups) == 1

@@ -57,14 +57,14 @@
   - Add screen shake, flash, and audio hooks synchronized with the wave lifecycle.
   - Enhance HUD bomb indicators (ready, charging, empty) and flash on activation.
   - Integrate the new bomb icon in both HUD and activation effects.
-- **Story E5 – Bomb pickup loop**
+- ✅ **Story E5 – Bomb pickup loop**
   - Introduce a bomb pickup sprite that gently bobs, flickers before expiring, and drifts from the spawn point.
   - Roll drop chances on asteroid destruction with odds that scale per level (base 1% + 0.1% per level, capped as needed), respecting simultaneity limits.
   - Award a stored bomb when the player collects the pickup, up to a configured maximum.
-- **Story E6 – Bomb icon asset**
+- ✅ **Story E6 – Bomb icon asset**
   - Create a red square icon with a yellow “B” for HUD usage and pickup rendering.
   - Provide helper routines so future HUD modules can recolor or animate the icon easily.
-- **Story E7 – Balancing & regression tests**
+- ✅ **Story E7 – Balancing & regression tests**
   - Cover bomb activation, cooldown, pickup expiration, and wave propagation with automated tests.
   - Verify interactions with transitions, game over, and player invulnerability states.
 

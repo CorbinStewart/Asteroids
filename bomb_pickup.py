@@ -28,12 +28,12 @@ class BombPickup(pygame.sprite.Sprite):
         self.timer = BOMB_PICKUP_LIFETIME
         self.spawn_time = 0.0
         self.visible = True
-        self.icon = BombIcon(self.radius * 2)
+        self.icon = BombIcon(int(self.radius * 2.6), line_width=3)
         self.image = self._create_surface()
         self.rect = self.image.get_rect(center=self.position)
 
     def _create_surface(self) -> pygame.Surface:
-        return self.icon.create_surface((200, 40, 40), (255, 220, 60))
+        return self.icon.create_surface((255, 255, 255), (40, 40, 80))
 
     def update(self, dt: float) -> None:
         self.spawn_time += dt
@@ -41,10 +41,15 @@ class BombPickup(pygame.sprite.Sprite):
         bob_offset = math.sin(self.spawn_time * BOMB_PICKUP_BOB_SPEED) * BOMB_PICKUP_BOB_HEIGHT
         self.position.y = self.base_position.y + bob_offset
         flicker_phase = self.timer <= BOMB_PICKUP_FLICKER_TIME
+        letter_on = True
         if flicker_phase:
-            self.visible = int(self.spawn_time * 10) % 2 == 0
-        else:
-            self.visible = True
+            letter_on = int(self.spawn_time * 10) % 2 == 0
+        self.image = self.icon.create_surface(
+            (220, 50, 50),
+            (255, 220, 60) if letter_on else (60, 60, 60),
+            None,
+        )
+        self.visible = True
         self.rect.center = (int(self.position.x), int(self.position.y))
         if self.timer <= 0:
             self.kill()
