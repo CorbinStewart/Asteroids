@@ -1,3 +1,5 @@
+import random
+
 import pygame
 
 from bomb_wave import BombController, BombWave
@@ -32,7 +34,7 @@ def test_bomb_wave_time_scale_and_completion():
     assert wave.radius > 0
 
     controller.update(BOMB_WAVE_DURATION)
-    controller.apply_wave_effects([], score)
+    controller.apply_wave_effects([], score, GameState(), pygame.sprite.Group(), random.Random())
     assert controller.current_wave() is None
     assert clock.time_scale == 1.0
 
@@ -58,12 +60,14 @@ def test_wave_destroys_small_asteroid_and_awards_points():
     state = GameState()
     score = ScoreManager(state)
     asteroids = _setup_asteroid_groups()
+    pickups = pygame.sprite.Group()
+    rng = random.Random()
 
     small = Asteroid(0, 0, ASTEROID_MIN_RADIUS)
 
     controller.trigger(pygame.Vector2(0, 0))
     controller.update(0.5)
-    controller.apply_wave_effects(asteroids, score)
+    controller.apply_wave_effects(asteroids, score, state, pickups, rng)
 
     assert not small.alive()
     assert state.score == ASTEROID_SCORE_SMALL
@@ -75,12 +79,14 @@ def test_wave_only_reduces_large_asteroid_once():
     state = GameState()
     score = ScoreManager(state)
     asteroids = _setup_asteroid_groups()
+    pickups = pygame.sprite.Group()
+    rng = random.Random()
 
     large = Asteroid(0, 0, ASTEROID_MIN_RADIUS * 3)
 
     controller.trigger(pygame.Vector2(0, 0))
     controller.update(0.5)
-    controller.apply_wave_effects(asteroids, score)
+    controller.apply_wave_effects(asteroids, score, state, pickups, rng)
 
     spawned = list(asteroids)
     assert large not in spawned
@@ -89,5 +95,5 @@ def test_wave_only_reduces_large_asteroid_once():
     assert state.score == ASTEROID_SCORE_LARGE
 
     # Apply again; the new fragments should not be processed further by the same wave.
-    controller.apply_wave_effects(asteroids, score)
+    controller.apply_wave_effects(asteroids, score, state, pickups, rng)
     assert len([a for a in asteroids if a.alive()]) == 2

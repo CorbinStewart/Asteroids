@@ -24,7 +24,7 @@ from constants import (
     SCREEN_HEIGHT,
     LEVEL_MESSAGE_DURATION,
 )
-from hud_icons import TriangleIcon, SquareIcon
+from hud_icons import TriangleIcon, SquareIcon, BombIcon
 from utils import create_star_field, format_score
 
 if TYPE_CHECKING:
@@ -60,7 +60,7 @@ class Hud:
             for i in range(5)
         ]
         self.life_icon = TriangleIcon(LIFE_ICON_SIZE)
-        self.bomb_icon = SquareIcon(14)
+        self.bomb_icon = BombIcon(18)
 
 
     def make_hud_text(self, font: "Font", text: str) -> tuple[pygame.Surface, pygame.Surface]:
@@ -159,8 +159,8 @@ class Hud:
             total_spacing = (count - 1) * bomb_spacing
             start_x = rect.centerx - total_spacing / 2
         flash = state.bomb_flash_timer > 0 and int(state.bomb_flash_timer * 10) % 2 == 0
-        base_color = (255, 255, 255) if count else (120, 120, 120)
-        flash_color = (255, 200, 64)
+        base_color = (80, 80, 160) if count else (100, 100, 100)
+        flash_color = (200, 80, 20)
         for i in range(max(1, count)):
             cx = start_x + i * bomb_spacing
             color = flash_color if flash else base_color

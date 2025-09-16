@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import random
+
 import pygame
 
 from typing import Iterable, TYPE_CHECKING
@@ -11,6 +13,7 @@ from constants import (
     BOMB_WAVE_MAX_RADIUS,
 )
 from game_clock import GameClock
+from bomb_pickup import spawn_pickups_from_split
 
 if TYPE_CHECKING:
     from asteroid import Asteroid
@@ -99,6 +102,9 @@ class BombController:
         self,
         asteroids: Iterable["Asteroid"],
         score_manager: "ScoreManager",
+        state,
+        pickups,
+        rng: random.Random,
     ) -> None:
         wave = self.current_wave()
         if not wave:
@@ -111,6 +117,7 @@ class BombController:
                 continue
             wave.mark_processed(asteroid)
             score_manager.add_asteroid_points(asteroid)
+            spawn_pickups_from_split(asteroid, state, rng, pickups)
             if asteroid.radius <= ASTEROID_MIN_RADIUS:
                 asteroid.kill()
                 continue

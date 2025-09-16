@@ -1,3 +1,5 @@
+import random
+
 import pygame
 from constants import *
 from player import *
@@ -11,6 +13,7 @@ from hud import Hud
 from game_clock import GameClock
 from bomb_wave import BombController
 from screen_shake import ScreenShake
+from bomb_pickup import BombPickup, spawn_pickups_from_split
 
 def main():
     print("Starting Asteroids!")
@@ -41,6 +44,7 @@ def main():
     drawable = pygame.sprite.Group()
     asteroids = pygame.sprite.Group()
     shots = pygame.sprite.Group()
+    pickups = pygame.sprite.Group()
     
     # Adding objects to groups
     Player.containers = (updatable, drawable)
@@ -90,10 +94,12 @@ def main():
 
         # Set background colour    
         world_surface.fill("black")
-        
+
+        rng = random.Random()
+
         # Updating group postion
         bomb_controller.update(dt)
-        bomb_controller.apply_wave_effects(asteroids, score_manager)
+        bomb_controller.apply_wave_effects(asteroids, score_manager, state, pickups, rng)
         scaled_dt = game_clock.scale_dt(dt)
         updatable.update(scaled_dt)
 
@@ -113,10 +119,11 @@ def main():
             player.reset(spawn_x, spawn_y)
 
         # Checking for bullet collision
-        for ast in asteroids:
-            for shot in shots:
+        for ast in list(asteroids):
+            for shot in list(shots):
                 if ast.collision_check(shot):
                     score_manager.add_asteroid_points(ast)
+                    spawn_pickups_from_split(ast, state, rng, pickups)
                     ast.split()
                     shot.kill()
 
@@ -139,6 +146,14 @@ def main():
         # Drawing the group position
         for spr in drawable:
             spr.draw(world_surface)
+        for pickup in list(pickups):
+            pickup.update(scaled_dt)
+            if pickup.collides_with(player.position, player.radius):
+                score_manager.add_bombs(1)
+                state.trigger_bomb_flash(BOMB_HUD_FLASH_DURATION)
+                pickup.kill()
+                continue
+            pickup.draw(world_surface)
 
         bomb_controller.draw(world_surface)
 

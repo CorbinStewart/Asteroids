@@ -69,12 +69,14 @@ def test_use_bomb_returns_false_when_empty():
     assert state.bombs == 0
 
 
-def test_add_bombs_increases_count():
+def test_add_bombs_increases_count_and_caps():
     state = GameState(bombs=0)
 
     state.add_bombs(2)
-
     assert state.bombs == 2
+
+    state.add_bombs(10)
+    assert state.bombs == state.bomb_cap
 
 
 def test_bomb_flash_timer_counts_down():
