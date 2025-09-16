@@ -25,3 +25,22 @@ Install `pytest` if needed and run the suite:
 python -m pip install pytest
 pytest -q
 ```
+
+## Code Quality Tools
+Install optional tooling for type checks and linting:
+```bash
+python -m pip install mypy ruff black
+```
+
+- Run static type checks:
+  ```bash
+  mypy .
+  ```
+- Run linting (imports/pep):
+  ```bash
+  ruff check .
+  ```
+- Format code:
+  ```bash
+  black .
+  ```

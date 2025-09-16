@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import random
+from typing import TYPE_CHECKING, Tuple
 
 import pygame
 
@@ -24,6 +27,16 @@ from constants import (
 from hud_icons import TriangleIcon, SquareIcon
 from utils import create_star_field, format_score
 
+if TYPE_CHECKING:
+    from pygame import Surface
+    from pygame.font import Font
+
+    from game_state import GameState
+    from level_manager import LevelManager
+    from player import Player
+
+HudStar = Tuple[int, int, int, int]
+
 
 class Hud:
     def __init__(self) -> None:
@@ -32,10 +45,10 @@ class Hud:
         self.font_semibold = load_font(ORBITRON_SEMIBOLD_FONT_PATH, HEADER_FONT_SIZE)
         self.hud_shadow_color = pygame.Color(120, 160, 255, 70)
         self.hud_text_color = pygame.Color(255, 255, 255, 220)
-        self.section_border_color = (255, 255, 255, 40)
+        self.section_border_color: Tuple[int, int, int, int] = (255, 255, 255, 40)
 
         rng = random.Random(42)
-        self.hud_stars = create_star_field(
+        self.hud_stars: list[HudStar] = create_star_field(
             count=8,
             width=SCREEN_WIDTH,
             height=STATUS_BAR_HEIGHT,
@@ -50,12 +63,12 @@ class Hud:
         self.bomb_icon = SquareIcon(14)
 
 
-    def make_hud_text(self, font, text: str):
+    def make_hud_text(self, font: "Font", text: str) -> tuple[pygame.Surface, pygame.Surface]:
         shadow = font.render(text, True, self.hud_shadow_color).convert_alpha()
         text_surface = font.render(text, True, self.hud_text_color).convert_alpha()
         return shadow, text_surface
 
-    def draw_subheader(self, surface, rect, text: str):
+    def draw_subheader(self, surface: "Surface", rect: pygame.Rect, text: str) -> None:
         shadow, header = self.make_hud_text(self.font_subheader, text)
         header_rect = header.get_rect()
         header_rect.centerx = rect.centerx
@@ -65,7 +78,7 @@ class Hud:
         surface.blit(shadow, shadow_rect)
         surface.blit(header, header_rect)
 
-    def _draw_gradient(self, surface):
+    def _draw_gradient(self, surface: "Surface") -> None:
         gradient_surface = pygame.Surface((SCREEN_WIDTH, STATUS_BAR_HEIGHT), pygame.SRCALPHA)
         top_color = pygame.Color(*STATUS_BAR_TOP_COLOR, 255)
         bottom_color = pygame.Color(*STATUS_BAR_BOTTOM_COLOR, 255)
@@ -91,7 +104,7 @@ class Hud:
             pygame.draw.circle(gradient_surface, (255, 255, 255, alpha), (sx, sy), radius)
         surface.blit(gradient_surface, (0, 0))
 
-    def _draw_panel_borders(self, surface):
+    def _draw_panel_borders(self, surface: "Surface") -> None:
         for rect in self.sections:
             border_surface = pygame.Surface(rect.size, pygame.SRCALPHA)
             pygame.draw.rect(
@@ -102,7 +115,14 @@ class Hud:
             )
             surface.blit(border_surface, rect)
 
-    def _draw_value_panel(self, surface, rect, subheader, text, font):
+    def _draw_value_panel(
+        self,
+        surface: "Surface",
+        rect: pygame.Rect,
+        subheader: str,
+        text: str,
+        font: "Font",
+    ) -> None:
         if subheader:
             self.draw_subheader(surface, rect, subheader)
         shadow, rendered = self.make_hud_text(font, text)
@@ -113,7 +133,7 @@ class Hud:
         surface.blit(shadow, shadow_rect)
         surface.blit(rendered, rendered_rect)
 
-    def _draw_lives(self, surface, rect, state):
+    def _draw_lives(self, surface: "Surface", rect: pygame.Rect, state: "GameState") -> None:
         self.draw_subheader(surface, rect, "LIVES")
         icon_count = state.lives + (1 if state.life_loss_active else 0)
         flash_on = True
@@ -130,7 +150,7 @@ class Hud:
             color = LIFE_ICON_FLICKER_COLOR if state.life_loss_active and i == icon_count - 1 and flash_on else "white"
             self.life_icon.draw(surface, (int(cx), int(icon_center_y)), color)
 
-    def _draw_bombs(self, surface, rect, state):
+    def _draw_bombs(self, surface: "Surface", rect: pygame.Rect, state: "GameState") -> None:
         self.draw_subheader(surface, rect, "BOMBS")
         bomb_spacing = 18
         count = state.bombs
@@ -142,7 +162,7 @@ class Hud:
             cx = start_x + i * bomb_spacing
             self.bomb_icon.draw(surface, (int(cx), int(rect.centery + 12)), "white")
 
-    def _draw_transition_text(self, surface, text, alpha, center_y):
+    def _draw_transition_text(self, surface: "Surface", text: str, alpha: int, center_y: float) -> None:
         shadow, rendered = self.make_hud_text(self.font_semibold, text)
         shadow.set_alpha(alpha)
         rendered.set_alpha(alpha)
@@ -153,7 +173,13 @@ class Hud:
         surface.blit(shadow, shadow_rect)
         surface.blit(rendered, rect)
 
-    def draw(self, surface, state, player, level_manager):
+    def draw(
+        self,
+        surface: "Surface",
+        state: "GameState",
+        player: "Player",
+        level_manager: "LevelManager",
+    ) -> None:
         self._draw_gradient(surface)
         self._draw_panel_borders(surface)
         life_section, power_section, hi_section, score_section, level_section = self.sections

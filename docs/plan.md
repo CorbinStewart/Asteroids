@@ -37,7 +37,7 @@
 - ✅ **Story D1 – Test harness setup**
   - Add `pytest` configuration and starter tests for `GameState`, `LevelManager`, and HUD layout calculations (mocking surfaces as needed).
   - Document test instructions in `README.md`.
-- **Story D2 – Type hints & linting**
+- ✅ **Story D2 – Type hints & linting**
   - Gradually annotate new modules with type hints and integrate tools such as `mypy`, `ruff`, or `black` for style consistency.
 
 ## Epic E – Future Feature Work

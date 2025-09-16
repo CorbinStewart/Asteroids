@@ -29,6 +29,9 @@ def test_hud_sections_cover_status_bar():
 
 def test_hud_draw_renders_status_bar_gradient():
     hud = Hud()
+    dummy_shadow = pygame.Surface((1, 1), pygame.SRCALPHA)
+    dummy_text = pygame.Surface((1, 1), pygame.SRCALPHA)
+    hud.make_hud_text = lambda font, text: (dummy_shadow.copy(), dummy_text.copy())  # type: ignore[assignment]
     state = GameState(score=12345, high_score=67890, bombs=2)
     player = SimpleNamespace(position=pygame.Vector2(SCREEN_WIDTH / 2, STATUS_BAR_HEIGHT + 50))
     level_manager = SimpleNamespace(transition=None)

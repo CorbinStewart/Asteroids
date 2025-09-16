@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import random
 from dataclasses import dataclass, field
+from typing import Optional
 
 from constants import LEVEL_MESSAGE_DURATION, LEVEL_DEFINITIONS
 from asteroidfield import AsteroidField
@@ -18,11 +21,16 @@ class LevelTransition:
 
 
 class LevelManager:
-    def __init__(self, state: GameState, asteroid_field: AsteroidField, score_manager: ScoreManager):
+    def __init__(
+        self,
+        state: GameState,
+        asteroid_field: AsteroidField,
+        score_manager: ScoreManager,
+    ) -> None:
         self.state = state
         self.asteroid_field = asteroid_field
         self.score_manager = score_manager
-        self.transition: LevelTransition | None = None
+        self.transition: Optional[LevelTransition] = None
         self.total_levels = len(LEVEL_DEFINITIONS)
 
     def configure_level(self, index: int) -> None:

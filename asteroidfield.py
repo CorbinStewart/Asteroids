@@ -1,7 +1,23 @@
-import pygame
+from __future__ import annotations
+
 import random
+from typing import TYPE_CHECKING
+
+import pygame
+
 from asteroid import Asteroid
-from constants import *
+from constants import (
+    ASTEROID_KINDS,
+    ASTEROID_MAX_RADIUS,
+    ASTEROID_MIN_RADIUS,
+    ASTEROID_SPAWN_RATE,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
+)
+
+if TYPE_CHECKING:
+    from pygame.math import Vector2
+    from pygame.sprite import Group
 
 
 class AsteroidField(pygame.sprite.Sprite):
@@ -28,28 +44,28 @@ class AsteroidField(pygame.sprite.Sprite):
         ],
     ]
 
-    def __init__(self, asteroids_group):
+    def __init__(self, asteroids_group: Group) -> None:
         pygame.sprite.Sprite.__init__(self, self.containers)
-        self.spawn_timer = 0.0
+        self.spawn_timer: float = 0.0
         self.asteroids_group = asteroids_group
-        self.spawn_limit = 0
-        self.max_active = 0
-        self.spawned_this_level = 0
-        self.speed_multiplier = 1.0
+        self.spawn_limit: int = 0
+        self.max_active: int = 0
+        self.spawned_this_level: int = 0
+        self.speed_multiplier: float = 1.0
 
-    def spawn(self, radius, position, velocity):
+    def spawn(self, radius: float, position: pygame.Vector2, velocity: pygame.Vector2) -> None:
         asteroid = Asteroid(position.x, position.y, radius)
         asteroid.velocity = velocity
         self.spawned_this_level += 1
 
-    def configure_level(self, spawn_limit, max_active, speed_multiplier):
+    def configure_level(self, spawn_limit: int, max_active: int, speed_multiplier: float) -> None:
         self.spawn_limit = max(0, spawn_limit)
         self.max_active = max(1, max_active)
         self.spawned_this_level = 0
         self.spawn_timer = 0.0
         self.speed_multiplier = max(0.1, speed_multiplier)
 
-    def level_complete(self):
+    def level_complete(self) -> bool:
         if self.spawn_limit == 0:
             return False
         return (
@@ -57,7 +73,7 @@ class AsteroidField(pygame.sprite.Sprite):
             and len(self.asteroids_group) == 0
         )
 
-    def update(self, dt):
+    def update(self, dt: float) -> None:
         if self.spawn_limit == 0:
             return
         self.spawn_timer += dt

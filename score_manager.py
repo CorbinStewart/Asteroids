@@ -1,9 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Protocol
 
 from constants import LEVEL_CLEAR_BONUS
 from game_state import GameState
+
+
+class AsteroidScoring(Protocol):
+    def score_value(self) -> int:
+        ...
 
 
 @dataclass
@@ -17,7 +23,7 @@ class ScoreManager:
         if self.state.score > self.state.high_score:
             self.state.high_score = self.state.score
 
-    def add_asteroid_points(self, asteroid) -> None:
+    def add_asteroid_points(self, asteroid: "AsteroidScoring") -> None:
         self.add_points(asteroid.score_value())
 
     def apply_level_bonus(self) -> int:
