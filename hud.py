@@ -158,9 +158,15 @@ class Hud:
         if count:
             total_spacing = (count - 1) * bomb_spacing
             start_x = rect.centerx - total_spacing / 2
-        for i in range(count):
+        flash = state.bomb_flash_timer > 0 and int(state.bomb_flash_timer * 10) % 2 == 0
+        base_color = (255, 255, 255) if count else (120, 120, 120)
+        flash_color = (255, 200, 64)
+        for i in range(max(1, count)):
             cx = start_x + i * bomb_spacing
-            self.bomb_icon.draw(surface, (int(cx), int(rect.centery + 12)), "white")
+            color = flash_color if flash else base_color
+            if count == 0 and i > 0:
+                break
+            self.bomb_icon.draw(surface, (int(cx), int(rect.centery + 12)), color)
 
     def _draw_transition_text(self, surface: "Surface", text: str, alpha: int, center_y: float) -> None:
         shadow, rendered = self.make_hud_text(self.font_semibold, text)

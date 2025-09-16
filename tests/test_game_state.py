@@ -1,11 +1,10 @@
 from game_state import GameState
-from constants import LIFE_ICON_FLICKER_DURATION, PLAYER_START_LIVES
+from constants import LIFE_ICON_FLICKER_DURATION, PLAYER_START_BOMBS, PLAYER_START_LIVES
 
 
 def test_reset_for_level_clears_loss_flags():
     state = GameState(
         lives=PLAYER_START_LIVES,
-        bombs=1,
         score=250,
         high_score=300,
         level_index=1,
@@ -53,3 +52,36 @@ def test_update_turns_off_life_loss_flash():
     state.update(LIFE_ICON_FLICKER_DURATION)
     assert state.life_loss_active is False
     assert state.life_loss_elapsed == 0.0
+
+
+def test_bombs_initialise_and_consume():
+    state = GameState()
+
+    assert state.bombs == PLAYER_START_BOMBS
+    assert state.use_bomb() is True
+    assert state.bombs == PLAYER_START_BOMBS - 1
+
+
+def test_use_bomb_returns_false_when_empty():
+    state = GameState(bombs=0)
+
+    assert state.use_bomb() is False
+    assert state.bombs == 0
+
+
+def test_add_bombs_increases_count():
+    state = GameState(bombs=0)
+
+    state.add_bombs(2)
+
+    assert state.bombs == 2
+
+
+def test_bomb_flash_timer_counts_down():
+    state = GameState()
+    state.trigger_bomb_flash(1.0)
+    assert state.bomb_flash_timer == 1.0
+    state.update(0.5)
+    assert state.bomb_flash_timer == 0.5
+    state.update(1.0)
+    assert state.bomb_flash_timer == 0.0

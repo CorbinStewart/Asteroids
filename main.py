@@ -8,6 +8,9 @@ from game_state import GameState
 from level_manager import LevelManager
 from score_manager import ScoreManager
 from hud import Hud
+from game_clock import GameClock
+from bomb_wave import BombController
+from screen_shake import ScreenShake
 
 def main():
     print("Starting Asteroids!")
@@ -21,7 +24,11 @@ def main():
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
     # Clock
-    clock = pygame.time.Clock()
+    frame_clock = pygame.time.Clock()
+    game_clock = GameClock()
+    bomb_controller = BombController(game_clock)
+    screen_shake = ScreenShake()
+    world_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
 
     state = GameState()
     score_manager = ScoreManager(state)
@@ -62,12 +69,33 @@ def main():
                 return
             if event.type == pygame.KEYDOWN and player.is_invulnerable:
                 player.force_invulnerability_fade()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_b:
+                if state.use_bomb():
+                    pygame.event.post(
+                        pygame.event.Event(
+                            BOMB_TRIGGER_EVENT,
+                            {"origin": (player.position.x, player.position.y)},
+                        )
+                    )
+            if event.type == BOMB_TRIGGER_EVENT:
+                data = event.dict
+                origin_tuple = data.get("origin")
+                if origin_tuple is not None:
+                    origin = pygame.Vector2(origin_tuple)
+                else:
+                    origin = pygame.Vector2(player.position)
+                bomb_controller.trigger(origin)
+                screen_shake.start(BOMB_SHAKE_DURATION, BOMB_SHAKE_STRENGTH)
+                state.trigger_bomb_flash(BOMB_HUD_FLASH_DURATION)
 
         # Set background colour    
-        screen.fill("black")
+        world_surface.fill("black")
         
         # Updating group postion
-        updatable.update(dt)
+        bomb_controller.update(dt)
+        bomb_controller.apply_wave_effects(asteroids, score_manager)
+        scaled_dt = game_clock.scale_dt(dt)
+        updatable.update(scaled_dt)
 
         # Checking for player collision
         player_hit = False
@@ -92,9 +120,9 @@ def main():
                     ast.split()
                     shot.kill()
 
-        state.update(dt)
+        state.update(scaled_dt)
 
-        level_manager.update(dt)
+        level_manager.update(scaled_dt)
 
         if level_manager.should_start_transition():
             if not level_manager.levels_remaining():
@@ -110,13 +138,20 @@ def main():
 
         # Drawing the group position
         for spr in drawable:
-            spr.draw(screen)
+            spr.draw(world_surface)
+
+        bomb_controller.draw(world_surface)
+
+        screen_shake.update(dt)
+        offset_x, offset_y = screen_shake.offset()
+        screen.fill("black")
+        screen.blit(world_surface, (offset_x, offset_y))
 
         hud.draw(screen, state, player, level_manager)
         pygame.display.flip()
 
         #Framerate
-        dt = (clock.tick(60) / 1000)
+        dt = frame_clock.tick(60) / 1000
     
 
 

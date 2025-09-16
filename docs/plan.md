@@ -41,19 +41,19 @@
   - Gradually annotate new modules with type hints and integrate tools such as `mypy`, `ruff`, or `black` for style consistency.
 
 ## Epic E – Bomb Mechanics & Shockwave Flow
-- **Story E1 – Bomb core systems**
+- ✅ **Story E1 – Bomb core systems**
   - Extend `GameState` / `ScoreManager` for bomb charge tracking and input handling.
   - Bind the `B` key to trigger bombs, including cooldown checks and charge consumption.
   - Introduce a central game clock/time-scale helper so slow-motion effects can be applied consistently.
   - Broadcast an activation event so other systems (HUD, FX) can respond.
-- **Story E2 – Shockwave & time dilation**
+- ✅ **Story E2 – Shockwave & time dilation**
   - Spawn an expanding shockwave from the ship when a bomb detonates.
   - Apply a temporary global time-scale drop that eases back to normal as the wave dissipates via the shared game clock.
   - Ensure player controls remain responsive while other entities honor the slow-motion multiplier.
-- **Story E3 – Asteroid resolution**
+- ✅ **Story E3 – Asteroid resolution**
   - Downgrade asteroids hit by the wave: large→two medium, medium→two small, small→destroy.
   - Prevent double-processing and keep score values consistent with standard splits.
-- **Story E4 – Feedback & HUD cues**
+- ✅ **Story E4 – Feedback & HUD cues**
   - Add screen shake, flash, and audio hooks synchronized with the wave lifecycle.
   - Enhance HUD bomb indicators (ready, charging, empty) and flash on activation.
   - Integrate the new bomb icon in both HUD and activation effects.

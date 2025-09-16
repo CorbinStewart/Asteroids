@@ -1,18 +1,23 @@
 from dataclasses import dataclass
 
-from constants import LIFE_ICON_FLICKER_DURATION, PLAYER_START_LIVES
+from constants import (
+    LIFE_ICON_FLICKER_DURATION,
+    PLAYER_START_BOMBS,
+    PLAYER_START_LIVES,
+)
 
 
 @dataclass
 class GameState:
     lives: int = PLAYER_START_LIVES
-    bombs: int = 0
+    bombs: int = PLAYER_START_BOMBS
     score: int = 0
     high_score: int = 0
     level_index: int = 0
     life_loss_active: bool = False
     life_loss_elapsed: float = 0.0
     life_lost_this_level: bool = False
+    bomb_flash_timer: float = 0.0
 
     def reset_for_level(self, level_index: int) -> None:
         """Prepare state for the given level."""
@@ -35,9 +40,28 @@ class GameState:
         if self.score > self.high_score:
             self.high_score = self.score
 
+    def can_use_bomb(self) -> bool:
+        return self.bombs > 0
+
+    def use_bomb(self) -> bool:
+        if not self.can_use_bomb():
+            return False
+        self.bombs -= 1
+        return True
+
+    def add_bombs(self, count: int = 1) -> None:
+        if count <= 0:
+            return
+        self.bombs += count
+
+    def trigger_bomb_flash(self, duration: float) -> None:
+        self.bomb_flash_timer = max(self.bomb_flash_timer, duration)
+
     def update(self, dt: float) -> None:
         if self.life_loss_active:
             self.life_loss_elapsed += dt
             if self.life_loss_elapsed >= LIFE_ICON_FLICKER_DURATION:
                 self.life_loss_active = False
                 self.life_loss_elapsed = 0.0
+        if self.bomb_flash_timer > 0:
+            self.bomb_flash_timer = max(0.0, self.bomb_flash_timer - dt)

@@ -26,6 +26,11 @@ class ScoreManager:
     def add_asteroid_points(self, asteroid: "AsteroidScoring") -> None:
         self.add_points(asteroid.score_value())
 
+    def add_bombs(self, count: int = 1) -> None:
+        if count <= 0:
+            return
+        self.state.add_bombs(count)
+
     def apply_level_bonus(self) -> int:
         level_number = self.state.level_index + 1
         bonus = LEVEL_CLEAR_BONUS * level_number
