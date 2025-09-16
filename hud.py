@@ -22,6 +22,7 @@ from constants import (
     LEVEL_MESSAGE_DURATION,
 )
 from hud_icons import TriangleIcon, SquareIcon
+from utils import create_star_field, format_score
 
 
 class Hud:
@@ -34,15 +35,12 @@ class Hud:
         self.section_border_color = (255, 255, 255, 40)
 
         rng = random.Random(42)
-        self.hud_stars = [
-            (
-                rng.randint(8, SCREEN_WIDTH - 8),
-                rng.randint(8, STATUS_BAR_HEIGHT - 8),
-                rng.choice((1, 2)),
-                rng.randint(40, 60),
-            )
-            for _ in range(8)
-        ]
+        self.hud_stars = create_star_field(
+            count=8,
+            width=SCREEN_WIDTH,
+            height=STATUS_BAR_HEIGHT,
+            rng=rng,
+        )
         section_width = SCREEN_WIDTH // 5
         self.sections = [
             pygame.Rect(i * section_width, 0, section_width, STATUS_BAR_HEIGHT)
@@ -167,7 +165,7 @@ class Hud:
             surface,
             hi_section,
             "HIGH SCORE",
-            f"{state.high_score:06d}",
+            format_score(state.high_score),
             self.font_regular,
         )
 
@@ -175,7 +173,7 @@ class Hud:
             surface,
             score_section,
             "SCORE",
-            f"{state.score:06d}",
+            format_score(state.score),
             self.font_regular,
         )
 
