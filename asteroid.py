@@ -15,6 +15,7 @@ class Asteroid(CircleShape):
     # Adding asteroid movement
     def update(self, dt):
         self.position += self.velocity * dt
+        self.wrap_position()
 
     # Asteroid spliting logic
     def split(self):

@@ -13,3 +13,28 @@ PLAYER_SHOOT_SPEED = 500
 PLAYER_SHOOT_COOLDOWN = 0.3
 
 SHOT_RADIUS = 5
+SHOT_LIFETIME = 3.0
+
+PLAYER_START_LIVES = 3
+PLAYER_RESPAWN_INVULNERABILITY = 5.0
+LIFE_ICON_SIZE = 12
+LIFE_ICON_SPACING = 28
+LIFE_ICON_FLICKER_DURATION = 0.7
+LIFE_ICON_FLICKER_INTERVAL = 0.12
+LIFE_ICON_FLICKER_COLOR = (160, 32, 32)
+PLAYER_SHIELD_RADIUS_PADDING = 20
+PLAYER_INVULNERABILITY_FADE_WINDOW = 2.0
+HUD_FONT_SIZE = 32
+
+LEVEL_DEFINITIONS = [
+    {"spawn_total": 10, "max_active": 10, "speed_multiplier": 1.0},
+    {"spawn_total": 14, "max_active": 12, "speed_multiplier": 1.0},
+    {"spawn_total": 20, "max_active": 15, "speed_multiplier": 1.1},
+    {"spawn_total": 26, "max_active": 18, "speed_multiplier": 1.15},
+    {"spawn_total": 30, "max_active": 22, "speed_multiplier": 1.2},
+    {"spawn_total": 35, "max_active": 25, "speed_multiplier": 1.35},
+    {"spawn_total": 35, "max_active": 25, "speed_multiplier": 1.5},
+    {"spawn_total": 35, "max_active": 25, "speed_multiplier": 1.65},
+    {"spawn_total": 35, "max_active": 25, "speed_multiplier": 1.8},
+    {"spawn_total": 35, "max_active": 25, "speed_multiplier": 2.0},
+]
