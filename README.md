@@ -44,3 +44,11 @@ python -m pip install mypy ruff black
   ```bash
   black .
   ```
+
+## Asset Organization
+- Fonts: place under `assets/fonts/`
+- Music stems/tracks: `assets/music/`
+- Sound effects: `assets/sounds/`
+- Use consistent naming (e.g., `bgm_phase01.ogg`, `sfx_shot_small.wav`) so loaders can select variants predictably.
+- Reference assets via relative paths (for example `assets/sounds/bomb.wav`);
+  the loader resolves these subfolders automatically.
