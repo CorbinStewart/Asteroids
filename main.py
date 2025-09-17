@@ -197,6 +197,7 @@ def main() -> bool:
                     score_manager.add_bombs(1)
                     state.trigger_bomb_flash(BOMB_HUD_FLASH_DURATION)
                     state.pickups_collected += 1
+                    audio_manager.play_bomb_pickup()
                     pickup.kill()
                     continue
                 pickup.draw(world_surface)

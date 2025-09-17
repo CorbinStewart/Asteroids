@@ -1,15 +1,23 @@
 import pygame
 import pytest
 
-from audio_manager import AudioManager, get_audio_manager, reset_audio_manager
+from audio_manager import (
+    AudioManager,
+    get_audio_manager,
+    reset_audio_manager,
+    np as audio_np,
+)
 
 
 class DummyChannel:
     def __init__(self) -> None:
         self.volume: float | None = None
 
-    def set_volume(self, value: float) -> None:
-        self.volume = value
+    def set_volume(self, *values: float) -> None:
+        if not values:
+            return
+        # pygame.Channel.set_volume accepts 1 or 2 values; store the first.
+        self.volume = values[0]
 
 
 class DummySound:
@@ -21,9 +29,12 @@ class DummySound:
     def set_volume(self, value: float) -> None:
         self.last_volume = value
 
-    def play(self) -> DummyChannel:
+    def play(self, loops: int = 0, maxtime: int = 0, fade_ms: int = 0) -> DummyChannel:
         self.play_calls += 1
         return self.channel
+
+    def get_volume(self) -> float:
+        return self.last_volume if self.last_volume is not None else 1.0
 
 
 def setup_function() -> None:
@@ -63,17 +74,45 @@ def test_audio_manager_fallback_when_mixer_fails(monkeypatch) -> None:
 
 def test_audio_manager_volume_applies_to_playback() -> None:
     manager = get_audio_manager()
-    # Replace the registered sound with a dummy so we can inspect volume usage.
+    manager.configure_sound("shot", volume_jitter=0.0, pitch_jitter=0.0)
+    entry = manager._sound_entries.get("shot")
+    assert entry is not None
     dummy_sound = DummySound()
+    entry.sound = dummy_sound
+    entry.config.volume_jitter = 0.0
+    entry.config.pitch_jitter = 0.0
+    entry.config.pitch_variants = ()
     manager.enabled = True
-    manager._sounds["custom"] = dummy_sound
-
     manager.set_sfx_volume(0.25)
-    manager.play("custom")
+
+    # Ensure playback uses deterministic factors.
+    manager.configure_sound("shot", volume_jitter=0.0, pitch_jitter=0.0)
+    manager.play_shot()
 
     assert dummy_sound.last_volume == 0.25
     assert dummy_sound.channel.volume == 0.25
     assert dummy_sound.play_calls == 1
+
+
+def test_volume_jitter_adjusts_channel_volume(monkeypatch) -> None:
+    manager = get_audio_manager()
+    manager.configure_sound("asteroid_hit", volume_jitter=0.2, pitch_jitter=0.0)
+    entry = manager._sound_entries.get("asteroid_hit")
+    assert entry is not None
+    dummy_sound = DummySound()
+    entry.sound = dummy_sound
+    entry.config.volume_jitter = 0.2
+    entry.config.pitch_jitter = 0.0
+    manager.enabled = True
+    manager.set_sfx_volume(0.5)
+
+    monkeypatch.setattr(manager, "_random_volume_factor", lambda config: 1.2)
+    monkeypatch.setattr(manager, "_random_pitch_factor", lambda config: 1.0)
+
+    manager.play_asteroid_hit()
+
+    assert dummy_sound.channel.volume is not None
+    assert pytest.approx(0.6, rel=1e-6) == dummy_sound.channel.volume
 
 
 def test_music_play_and_fade(monkeypatch) -> None:
@@ -172,3 +211,21 @@ def test_music_play_and_fade(monkeypatch) -> None:
 
     manager.stop_music()
     assert state["stops"], "channels should stop on shutdown"
+
+
+def test_pitch_variants_precomputed() -> None:
+    manager = get_audio_manager()
+    entry = manager._sound_entries.get("shot")
+    if entry is None or entry.sound is None or audio_np is None:
+        pytest.skip("Pitch resampling unavailable on this platform")
+
+    manager.configure_sound("shot", pitch_jitter=0.04)
+    variants = entry.config.pitch_variants
+    assert variants
+    off_unity = [factor for factor in variants if factor != 1.0]
+    assert off_unity, "Expected at least one non-unity pitch variant"
+    cache_keys = {key for key in manager._variant_cache if key[0] == id(entry.sound)}
+    assert cache_keys, "Expected cached pitch variants"
+    for factor in off_unity:
+        rounded = round(factor, 3)
+        assert (id(entry.sound), rounded) in cache_keys

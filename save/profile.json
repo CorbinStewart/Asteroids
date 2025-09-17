@@ -1,8 +1,14 @@
 {
   "version": 2,
   "scores": {
-    "high_score": 6654,
+    "high_score": 6815,
     "leaderboard": [
+      {
+        "name": "ACE",
+        "score": 6815,
+        "level": 4,
+        "timestamp": "2025-09-17T06:10:36+00:00"
+      },
       {
         "name": "ACE",
         "score": 6654,
@@ -17,28 +23,22 @@
       },
       {
         "name": "ACE",
+        "score": 3366,
+        "level": 3,
+        "timestamp": "2025-09-17T05:52:30+00:00"
+      },
+      {
+        "name": "ACE",
         "score": 3330,
         "level": 2,
         "timestamp": "2025-09-17T03:41:50+00:00"
-      },
-      {
-        "name": "ACE",
-        "score": 3330,
-        "level": 3,
-        "timestamp": "2025-09-17T05:10:12+00:00"
-      },
-      {
-        "name": "ACE",
-        "score": 3242,
-        "level": 3,
-        "timestamp": "2025-09-17T03:37:23+00:00"
       }
     ],
     "milestones": {
-      "total_asteroids_destroyed": 119,
-      "total_bombs_used": 7,
-      "total_pickups_collected": 2,
-      "total_time_survived": 819.801084575013
+      "total_asteroids_destroyed": 306,
+      "total_bombs_used": 16,
+      "total_pickups_collected": 4,
+      "total_time_survived": 1171.711821125001
     }
   },
   "settings": {

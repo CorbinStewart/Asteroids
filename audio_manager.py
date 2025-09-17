@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import os
 import random
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List
+from typing import Any, Dict, List, Tuple
 
 import pygame
 
@@ -15,12 +16,35 @@ DEFAULT_SOUND_MAP = {
     "shot": "assets/sounds/Player_Shot.wav",
     "asteroid_hit": "assets/sounds/Asteroid_Hit.wav",
     "bomb": "assets/sounds/Player_Bomb.wav",
+    "bomb_pickup": "assets/sounds/Bomb_Pickup.wav",
 }
+try:
+    import numpy as _np  # type: ignore[import-not-found]
+    import pygame.sndarray as sndarray  # type: ignore[attr-defined]
+except Exception:  # pragma: no cover - numpy may be missing in minimal envs
+    _np = None  # type: ignore[assignment]
+    sndarray = None  # type: ignore[assignment]
+
+np: Any | None = _np
+
 MUSIC_DIR = Path("assets/music")
 
 
 def _clamp(value: float, minimum: float, maximum: float) -> float:
     return max(minimum, min(maximum, value))
+
+
+@dataclass
+class SoundPlayConfig:
+    volume_jitter: float = 0.0
+    pitch_jitter: float = 0.0
+    pitch_variants: Tuple[float, ...] = ()
+
+
+@dataclass
+class SoundEntry:
+    sound: pygame.mixer.Sound | None
+    config: SoundPlayConfig
 
 
 class MusicPlayer:
@@ -182,7 +206,9 @@ class AudioManager:
 
     def __init__(self) -> None:
         self.enabled = False
-        self._sounds: Dict[str, pygame.mixer.Sound | None] = {}
+        self._sound_entries: Dict[str, SoundEntry] = {}
+        self._variant_cache: Dict[Tuple[int, float], pygame.mixer.Sound] = {}
+        self._rng = random.Random()
         self.sfx_volume = 1.0
         self._ensure_mixer()
         self._register_defaults()
@@ -213,10 +239,15 @@ class AudioManager:
     def _register_defaults(self) -> None:
         for key, path in DEFAULT_SOUND_MAP.items():
             self.register_sound(key, path)
+        # Apply subtle jitter defaults for core effects.
+        self.configure_sound("shot", volume_jitter=0.12, pitch_jitter=0.06)
+        self.configure_sound("asteroid_hit", volume_jitter=0.15, pitch_jitter=0.05)
+        self.configure_sound("bomb", volume_jitter=0.08, pitch_jitter=0.0)
+        self.configure_sound("bomb_pickup", volume_jitter=0.1, pitch_jitter=0.02)
 
     def register_sound(self, key: str, path: str) -> None:
         if not self.enabled:
-            self._sounds[key] = None
+            self._sound_entries[key] = SoundEntry(sound=None, config=SoundPlayConfig())
             return
         try:
             sound = load_sound(path)
@@ -224,21 +255,118 @@ class AudioManager:
             sound = None
         if sound is not None:
             sound.set_volume(self.sfx_volume)
-        self._sounds[key] = sound
+        self._sound_entries[key] = SoundEntry(sound=sound, config=SoundPlayConfig())
 
     def set_sfx_volume(self, value: float) -> None:
         self.sfx_volume = _clamp(float(value), 0.0, 1.0)
-        for sound in self._sounds.values():
-            if sound is not None:
-                sound.set_volume(self.sfx_volume)
+        for entry in self._sound_entries.values():
+            if entry.sound is not None:
+                entry.sound.set_volume(self.sfx_volume)
+
+    def configure_sound(
+        self,
+        key: str,
+        *,
+        volume_jitter: float | None = None,
+        pitch_jitter: float | None = None,
+    ) -> None:
+        entry = self._sound_entries.get(key)
+        if entry is None:
+            return
+        if volume_jitter is not None:
+            entry.config.volume_jitter = max(0.0, float(volume_jitter))
+        if pitch_jitter is not None:
+            entry.config.pitch_jitter = max(0.0, float(pitch_jitter))
+        self._refresh_pitch_variants(entry)
+
+    def _refresh_pitch_variants(self, entry: SoundEntry) -> None:
+        jitter = entry.config.pitch_jitter
+        if jitter <= 0 or np is None or sndarray is None:
+            entry.config.pitch_variants = ()
+            return
+        base_factors = [1.0 - jitter, 1.0 - jitter * 0.5, 1.0, 1.0 + jitter * 0.5, 1.0 + jitter]
+        factors = []
+        for factor in base_factors:
+            clamped = _clamp(factor, 0.5, 1.5)
+            factors.append(round(clamped, 3))
+        entry.config.pitch_variants = tuple(sorted(set(factors)))
+        if entry.sound is not None:
+            for factor in entry.config.pitch_variants:
+                if factor != 1.0:
+                    self._get_pitch_variant(entry.sound, factor)
+
+    def _random_volume_factor(self, config: SoundPlayConfig) -> float:
+        if config.volume_jitter <= 0:
+            return 1.0
+        jitter = self._rng.uniform(-config.volume_jitter, config.volume_jitter)
+        return _clamp(1.0 + jitter, 0.0, 2.0)
+
+    def _random_pitch_factor(self, config: SoundPlayConfig) -> float:
+        if not config.pitch_variants:
+            return 1.0
+        return self._rng.choice(config.pitch_variants)
+
+    def _get_pitch_variant(
+        self,
+        base_sound: pygame.mixer.Sound,
+        pitch_factor: float,
+    ) -> pygame.mixer.Sound | None:
+        if np is None or sndarray is None or pitch_factor == 1.0:
+            return base_sound
+        cache_key = (id(base_sound), round(pitch_factor, 3))
+        cached = self._variant_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        try:
+            samples = sndarray.array(base_sound)
+        except Exception:
+            return base_sound
+        if samples.size == 0:
+            return base_sound
+        source_length = samples.shape[0]
+        new_length = max(1, int(source_length / pitch_factor))
+        source_indices = np.arange(source_length)
+        target_indices = np.linspace(0, source_length - 1, new_length)
+        if samples.ndim == 1:
+            resampled = np.interp(target_indices, source_indices, samples).astype(samples.dtype, copy=False)
+        else:
+            channels = []
+            for channel_index in range(samples.shape[1]):
+                channel_data = np.interp(
+                    target_indices,
+                    source_indices,
+                    samples[:, channel_index],
+                )
+                channels.append(channel_data)
+            resampled = np.stack(channels, axis=1)
+            resampled = resampled.astype(samples.dtype, copy=False)
+        if np.issubdtype(samples.dtype, np.integer):
+            info = np.iinfo(samples.dtype)
+            resampled = np.clip(resampled, info.min, info.max).astype(samples.dtype)
+        else:
+            resampled = resampled.astype(samples.dtype)
+        try:
+            new_sound = sndarray.make_sound(np.ascontiguousarray(resampled))
+        except Exception:
+            return base_sound
+        new_sound.set_volume(self.sfx_volume)
+        self._variant_cache[cache_key] = new_sound
+        return new_sound
 
     def play(self, key: str) -> None:
-        sound = self._sounds.get(key)
-        if not self.enabled or sound is None:
+        entry = self._sound_entries.get(key)
+        if not self.enabled or entry is None or entry.sound is None:
             return
-        channel = sound.play()
+        sound_to_play = entry.sound
+        pitch_factor = self._random_pitch_factor(entry.config)
+        if pitch_factor != 1.0:
+            variant = self._get_pitch_variant(entry.sound, pitch_factor)
+            if variant is not None:
+                sound_to_play = variant
+        channel = sound_to_play.play()
         if channel is not None:
-            channel.set_volume(self.sfx_volume)
+            volume_factor = self._random_volume_factor(entry.config)
+            channel.set_volume(_clamp(self.sfx_volume * volume_factor, 0.0, 1.0))
 
     def play_shot(self) -> None:
         self.play("shot")
@@ -248,6 +376,9 @@ class AudioManager:
 
     def play_bomb(self) -> None:
         self.play("bomb")
+
+    def play_bomb_pickup(self) -> None:
+        self.play("bomb_pickup")
 
     def play_level_music(self, level_index: int, *, transition_ms: int | None = None) -> None:
         duration = 1800 if transition_ms is None else max(0, int(transition_ms))

@@ -92,7 +92,7 @@
 - ✅ **Story G2 – Dynamic music layers**
   - Implement layered background music that scales with encounter intensity.
   - Adopt a naming convention for music assets (e.g., `bgm_phase01.ogg`, `bgm_boss02.ogg`) and support seamless fade-out/in between randomly selected tracks per level.
-- **Story G3 – SFX library build-out**
+- ✅ **Story G3 – SFX library build-out**
   - Integrate unique sounds for shots, asteroid splits by size, bomb detonations, pickups, and UI transitions.
   - Randomize pitch/volume subtly for freshness.
 - **Story G4 – Visual FX framework**
