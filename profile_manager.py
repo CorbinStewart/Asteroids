@@ -15,12 +15,13 @@ DEFAULT_PROFILE: Dict[str, Any] = {
     "version": CURRENT_VERSION,
     "scores": {
         "high_score": 0,
-        "leaderboard": [],  # list of dicts: {"score": int, "level": int, "timestamp": str}
+        "leaderboard": [],  # list of dicts: {"name": str, "score": int, "level": int, ...}
     },
     "settings": {
         "music_volume": 1.0,
         "sfx_volume": 1.0,
         "screen_shake": 1.0,
+        "player_name": "ACE",
     },
 }
 
@@ -88,11 +89,17 @@ class ProfileManager:
     def leaderboard(self) -> list[Dict[str, Any]]:
         return self.data.setdefault("scores", {}).setdefault("leaderboard", [])
 
-    def submit_score(self, score: int, level: int, bombs_used: int = 0, limit: int = 10) -> None:
+    def submit_score(
+        self,
+        name: str,
+        score: int,
+        level: int,
+        limit: int = 5,
+    ) -> None:
         entry = {
+            "name": str(name)[:10] or "ACE",
             "score": max(0, int(score)),
             "level": max(0, int(level)),
-            "bombs_used": max(0, int(bombs_used)),
             "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
         }
         board = self.leaderboard()

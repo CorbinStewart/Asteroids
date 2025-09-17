@@ -49,14 +49,15 @@ def test_save_creates_directory(tmp_path: Path):
 def test_submit_score_updates_leaderboard(tmp_path: Path):
     path = tmp_path / "profile.json"
     manager = ProfileManager(path=path)
-    manager.submit_score(500, 2, bombs_used=1)
-    manager.submit_score(1200, 4, bombs_used=0)
-    manager.submit_score(800, 3, bombs_used=2)
+    manager.submit_score("AAA", 500, 2)
+    manager.submit_score("BBBBBBBBBBBB", 1200, 4)
+    manager.submit_score("CCC", 800, 3)
     manager.save()
 
     reloaded = ProfileManager(path=path)
     reloaded.load()
     board = reloaded.leaderboard()
+    assert board[0]["name"] == "BBBBBBBBBB"
     assert board[0]["score"] == 1200
     assert board[1]["score"] == 800
     assert "timestamp" in board[0]

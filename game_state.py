@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from constants import (
     LIFE_ICON_FLICKER_DURATION,
@@ -21,6 +21,7 @@ class GameState:
     bomb_cap: int = 5
     bombs_used: int = 0
     high_score_flash_timer: float = 0.0
+    leaderboard: list[dict[str, int]] = field(default_factory=list)
 
     def reset_for_level(self, level_index: int) -> None:
         """Prepare state for the given level."""

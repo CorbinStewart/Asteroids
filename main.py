@@ -39,6 +39,7 @@ def main():
 
     state = GameState()
     state.high_score = profile.high_score
+    state.leaderboard = profile.leaderboard().copy()
     score_manager = ScoreManager(state, profile)
     hud = Hud()
 
@@ -73,10 +74,11 @@ def main():
     def finalize_run(level_completed: bool = False) -> None:
         if state.score > 0:
             profile.submit_score(
+                profile.settings().get("player_name", "ACE"),
                 state.score,
                 state.level_index + 1,
-                state.bombs_used,
             )
+            state.leaderboard = profile.leaderboard().copy()
         profile.save()
 
     try:
