@@ -69,7 +69,7 @@
   - Verify interactions with transitions, game over, and player invulnerability states.
 
 ## Epic F – High-Score Persistence & Progression
-- **Story F1 – Persistence foundation**
+- ✅ **Story F1 – Persistence foundation**
   - Define a versioned save schema (JSON or similar) for scores, run stats, and settings.
   - Implement load/update/save helpers with safe defaults when files are missing or corrupt.
   - Document schema versions and upgrade helpers so future migrations remain straightforward.
