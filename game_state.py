@@ -1,10 +1,16 @@
 from dataclasses import dataclass, field
+from typing import Any
 
 from constants import (
     LIFE_ICON_FLICKER_DURATION,
     PLAYER_START_BOMBS,
     PLAYER_START_LIVES,
+    HIGH_SCORE_FLASH_PERIOD,
 )
+
+
+def _clamp(value: float, minimum: float, maximum: float) -> float:
+    return max(minimum, min(maximum, value))
 
 
 @dataclass
@@ -20,8 +26,17 @@ class GameState:
     bomb_flash_timer: float = 0.0
     bomb_cap: int = 5
     bombs_used: int = 0
-    high_score_flash_timer: float = 0.0
+    high_score_flash_elapsed: float = 0.0
+    high_score_beaten: bool = False
+    initial_high_score: int = 0
     leaderboard: list[dict[str, int]] = field(default_factory=list)
+    run_time: float = 0.0
+    pickups_collected: int = 0
+    asteroids_destroyed: int = 0
+    music_volume: float = 1.0
+    sfx_volume: float = 1.0
+    screen_shake_scale: float = 1.0
+    player_name: str = "ACE"
 
     def reset_for_level(self, level_index: int) -> None:
         """Prepare state for the given level."""
@@ -29,6 +44,11 @@ class GameState:
         self.life_lost_this_level = False
         self.life_loss_active = False
         self.life_loss_elapsed = 0.0
+        self.high_score_beaten = False
+        self.high_score_flash_elapsed = 0.0
+        self.bombs_used = 0
+        self.pickups_collected = 0
+        self.asteroids_destroyed = 0
 
     def lose_life(self) -> None:
         if self.lives > 0:
@@ -62,8 +82,10 @@ class GameState:
     def trigger_bomb_flash(self, duration: float) -> None:
         self.bomb_flash_timer = max(self.bomb_flash_timer, duration)
 
-    def trigger_high_score_flash(self, duration: float) -> None:
-        self.high_score_flash_timer = max(self.high_score_flash_timer, duration)
+    def start_high_score_flash(self) -> None:
+        if not self.high_score_beaten:
+            self.high_score_beaten = True
+            self.high_score_flash_elapsed = 0.0
 
     def update(self, dt: float) -> None:
         if self.life_loss_active:
@@ -73,5 +95,13 @@ class GameState:
                 self.life_loss_elapsed = 0.0
         if self.bomb_flash_timer > 0:
             self.bomb_flash_timer = max(0.0, self.bomb_flash_timer - dt)
-        if self.high_score_flash_timer > 0:
-            self.high_score_flash_timer = max(0.0, self.high_score_flash_timer - dt)
+        if self.high_score_beaten:
+            self.high_score_flash_elapsed += dt
+        self.run_time += dt
+
+    def apply_settings(self, settings: dict[str, Any]) -> None:
+        self.music_volume = _clamp(float(settings.get("music_volume", self.music_volume)), 0.0, 1.0)
+        self.sfx_volume = _clamp(float(settings.get("sfx_volume", self.sfx_volume)), 0.0, 1.0)
+        self.screen_shake_scale = _clamp(float(settings.get("screen_shake", self.screen_shake_scale)), 0.0, 1.0)
+        name = str(settings.get("player_name", self.player_name)).strip() or "ACE"
+        self.player_name = name[:10].rstrip() or "ACE"

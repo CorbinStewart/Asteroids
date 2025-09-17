@@ -10,7 +10,6 @@ from assets import load_font
 from constants import (
     HEADER_FONT_SIZE,
     HUD_FONT_SIZE,
-    HUD_SMALL_FONT_SIZE,
     ORBITRON_FONT_PATH,
     ORBITRON_SEMIBOLD_FONT_PATH,
     STATUS_BAR_BOTTOM_COLOR,
@@ -24,6 +23,7 @@ from constants import (
     SCREEN_WIDTH,
     SCREEN_HEIGHT,
     LEVEL_MESSAGE_DURATION,
+    HIGH_SCORE_FLASH_PERIOD,
 )
 from hud_icons import TriangleIcon, SquareIcon, BombIcon
 from utils import create_star_field, format_score
@@ -44,7 +44,6 @@ class Hud:
         self.font_regular = load_font(ORBITRON_FONT_PATH, HUD_FONT_SIZE)
         self.font_subheader = load_font(ORBITRON_FONT_PATH, SUBHEADER_FONT_SIZE)
         self.font_semibold = load_font(ORBITRON_SEMIBOLD_FONT_PATH, HEADER_FONT_SIZE)
-        self.font_small = load_font(ORBITRON_FONT_PATH, HUD_SMALL_FONT_SIZE)
         self.hud_shadow_color = pygame.Color(120, 160, 255, 70)
         self.hud_text_color = pygame.Color(255, 255, 255, 220)
         self.section_border_color: Tuple[int, int, int, int] = (255, 255, 255, 40)
@@ -203,30 +202,22 @@ class Hud:
         self._draw_lives(surface, life_section, state)
         self._draw_bombs(surface, power_section, state)
 
-        self._draw_value_panel(
-            surface,
-            hi_section,
-            "HIGH SCORE",
-            format_score(state.high_score),
-            self.font_regular,
-        )
-        if state.high_score_flash_timer > 0:
-            label = self.font_subheader.render("NEW!", True, (255, 220, 80))
-            label_rect = label.get_rect()
-            label_rect.midtop = (hi_section.centerx, hi_section.top + 36)
-            surface.blit(label, label_rect)
-        leaderboard = getattr(state, "leaderboard", [])[:5]
-        if leaderboard:
-            start_y = hi_section.top + 56
-            for idx, entry in enumerate(leaderboard):
-                name = entry.get("name", "---")
-                score = entry.get("score", 0)
-                level = entry.get("level", 0)
-                text = f"{name:<10} {score:06d} L{level:02d}"
-                render = self.font_small.render(text, True, (180, 200, 255))
-                text_rect = render.get_rect()
-                text_rect.midtop = (hi_section.centerx, start_y + idx * (HUD_SMALL_FONT_SIZE + 2))
-                surface.blit(render, text_rect)
+        is_new = state.high_score_beaten and int(state.high_score_flash_elapsed / HIGH_SCORE_FLASH_PERIOD) % 2 == 0
+        header_text = "NEW" if is_new else "HIGH SCORE"
+        header_color = (255, 220, 120) if is_new else (255, 255, 255)
+        score_label = self.font_subheader.render(header_text, True, header_color)
+        score_label_rect = score_label.get_rect()
+        score_label_rect.centerx = hi_section.centerx
+        score_label_rect.top = hi_section.top + 6
+        surface.blit(score_label, score_label_rect)
+
+        shadow, rendered = self.make_hud_text(self.font_regular, format_score(state.high_score))
+        value_rect = rendered.get_rect()
+        value_rect.center = (hi_section.centerx, hi_section.centery + 8)
+        shadow_rect = value_rect.copy()
+        shadow_rect.move_ip(0, 1)
+        surface.blit(shadow, shadow_rect)
+        surface.blit(rendered, value_rect)
 
         self._draw_value_panel(
             surface,

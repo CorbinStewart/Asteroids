@@ -16,6 +16,12 @@ DEFAULT_PROFILE: Dict[str, Any] = {
     "scores": {
         "high_score": 0,
         "leaderboard": [],  # list of dicts: {"name": str, "score": int, "level": int, ...}
+        "milestones": {
+            "total_asteroids_destroyed": 0,
+            "total_bombs_used": 0,
+            "total_pickups_collected": 0,
+            "total_time_survived": 0.0,
+        },
     },
     "settings": {
         "music_volume": 1.0,
@@ -24,6 +30,14 @@ DEFAULT_PROFILE: Dict[str, Any] = {
         "player_name": "ACE",
     },
 }
+
+
+def _clamp_float(value: Any, minimum: float, maximum: float) -> float:
+    try:
+        result = float(value)
+    except (TypeError, ValueError):
+        return minimum
+    return max(minimum, min(maximum, result))
 
 
 @dataclass
@@ -86,6 +100,18 @@ class ProfileManager:
     def settings(self) -> Dict[str, Any]:
         return self.data.setdefault("settings", {})
 
+    def update_settings(self, **kwargs: Any) -> None:
+        settings = self.settings()
+        if "music_volume" in kwargs:
+            settings["music_volume"] = _clamp_float(kwargs["music_volume"], 0.0, 1.0)
+        if "sfx_volume" in kwargs:
+            settings["sfx_volume"] = _clamp_float(kwargs["sfx_volume"], 0.0, 1.0)
+        if "screen_shake" in kwargs:
+            settings["screen_shake"] = _clamp_float(kwargs["screen_shake"], 0.0, 1.0)
+        if "player_name" in kwargs:
+            name = str(kwargs["player_name"]).strip() or "ACE"
+            settings["player_name"] = name[:10].rstrip() or "ACE"
+
     def leaderboard(self) -> list[Dict[str, Any]]:
         return self.data.setdefault("scores", {}).setdefault("leaderboard", [])
 
@@ -108,3 +134,17 @@ class ProfileManager:
         del board[limit:]
         if entry["score"] > self.high_score:
             self.set_high_score(entry["score"])
+
+    def record_milestones(
+        self,
+        *,
+        asteroids_destroyed: int = 0,
+        bombs_used: int = 0,
+        pickups_collected: int = 0,
+        time_survived: float = 0.0,
+    ) -> None:
+        milestones = self.data.setdefault("scores", {}).setdefault("milestones", {})
+        milestones["total_asteroids_destroyed"] = milestones.get("total_asteroids_destroyed", 0) + max(0, asteroids_destroyed)
+        milestones["total_bombs_used"] = milestones.get("total_bombs_used", 0) + max(0, bombs_used)
+        milestones["total_pickups_collected"] = milestones.get("total_pickups_collected", 0) + max(0, pickups_collected)
+        milestones["total_time_survived"] = milestones.get("total_time_survived", 0.0) + max(0.0, time_survived)

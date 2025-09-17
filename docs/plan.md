@@ -76,10 +76,10 @@
 - ✅ **Story F2 – Leaderboards & HUD surfacing**
   - Track a local leaderboard (top N scores) with metadata such as level reached and bomb usage.
   - Surface personal bests in the HUD or between-level banner (“New high score!”).
-- **Story F3 – Meta progression hooks**
+- ✅ **Story F3 – Meta progression hooks**
   - Record cumulative milestones (e.g., total asteroids destroyed, total bombs used, levels cleared).
   - Unlock cosmetic or title flags that future features can read (e.g., alternate ship skins).
-- **Story F4 – Settings persistence**
+- ✅ **Story F4 – Settings persistence**
   - Save user preferences: audio levels, control bindings, accessibility toggles.
   - Ensure changes persist across sessions and integrate with future menu work.
 - **Story F5 – Migration & reliability tests**
@@ -115,7 +115,7 @@
 - **Story H2 – Pause overlay**
   - Add a translucent pause menu showing resume/restart/quit options plus current run stats.
   - Ensure gameplay freezes cleanly and resumes without side effects.
-- **Story H3 – Run summary screen**
+- ✅ **Story H3 – Run summary screen**
   - Present a post-run breakdown (score, best combo, time survived, bombs detonated, pickups collected) before returning to the title screen.
   - Trigger persistence hooks from Epic F to record leaderboard entries and milestones.
 - **Story H4 – Settings UI scaffold**

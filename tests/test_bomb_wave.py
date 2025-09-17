@@ -71,6 +71,7 @@ def test_wave_destroys_small_asteroid_and_awards_points():
 
     assert not small.alive()
     assert state.score == ASTEROID_SCORE_SMALL
+    assert state.asteroids_destroyed == 1
 
 
 def test_wave_only_reduces_large_asteroid_once():
@@ -93,6 +94,7 @@ def test_wave_only_reduces_large_asteroid_once():
     assert len(spawned) == 2
     assert all(a.radius < large.radius for a in spawned)
     assert state.score == ASTEROID_SCORE_LARGE
+    assert state.asteroids_destroyed == 1
 
     # Apply again; the new fragments should not be processed further by the same wave.
     controller.apply_wave_effects(asteroids, score, state, pickups, rng)
@@ -116,3 +118,4 @@ def test_wave_can_spawn_pickup_when_drop_occurs():
     controller.apply_wave_effects(asteroids, score, state, pickups, rng)
 
     assert len(pickups) == 1
+    assert state.asteroids_destroyed == 1

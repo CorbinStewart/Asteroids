@@ -11,6 +11,11 @@ def test_reset_for_level_clears_loss_flags():
         life_loss_active=True,
         life_loss_elapsed=0.5,
         life_lost_this_level=True,
+        initial_high_score=300,
+        bombs_used=3,
+        pickups_collected=2,
+        high_score_beaten=True,
+        high_score_flash_elapsed=5.0,
     )
 
     state.reset_for_level(3)
@@ -19,6 +24,11 @@ def test_reset_for_level_clears_loss_flags():
     assert state.life_lost_this_level is False
     assert state.life_loss_active is False
     assert state.life_loss_elapsed == 0.0
+    assert state.bombs_used == 0
+    assert state.pickups_collected == 0
+    assert state.high_score_beaten is False
+    assert state.high_score_flash_elapsed == 0.0
+    assert state.initial_high_score == 300
 
 
 def test_lose_life_updates_state_flags():
@@ -40,6 +50,7 @@ def test_add_score_increases_high_score():
 
     assert state.score == 25
     assert state.high_score == 25
+    assert state.high_score_beaten is False
 
 
 def test_update_turns_off_life_loss_flash():
@@ -88,3 +99,28 @@ def test_bomb_flash_timer_counts_down():
     assert state.bomb_flash_timer == 0.5
     state.update(1.0)
     assert state.bomb_flash_timer == 0.0
+
+
+def test_start_high_score_flash_sets_flag():
+    state = GameState()
+    state.start_high_score_flash()
+    assert state.high_score_beaten is True
+    assert state.high_score_flash_elapsed == 0.0
+    state.update(1.0)
+    assert state.high_score_flash_elapsed > 0
+
+
+def test_apply_settings_updates_fields():
+    state = GameState()
+    state.apply_settings(
+        {
+            "music_volume": 0.2,
+            "sfx_volume": 0.8,
+            "screen_shake": 0.5,
+            "player_name": "Pilot1234567",
+        }
+    )
+    assert state.music_volume == 0.2
+    assert state.sfx_volume == 0.8
+    assert state.screen_shake_scale == 0.5
+    assert state.player_name == "Pilot12345"

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
-from constants import LEVEL_CLEAR_BONUS, HIGH_SCORE_FLASH_DURATION
+from constants import LEVEL_CLEAR_BONUS
 from game_state import GameState
 
 
@@ -21,9 +21,15 @@ class ScoreManager:
         if amount <= 0:
             return
         self.state.score += amount
+        previous_high = self.state.high_score
         if self.state.score > self.state.high_score:
             self.state.high_score = self.state.score
-            self.state.trigger_high_score_flash(HIGH_SCORE_FLASH_DURATION)
+            if (
+                self.state.initial_high_score > 0
+                and previous_high >= self.state.initial_high_score
+                and not self.state.high_score_beaten
+            ):
+                self.state.start_high_score_flash()
             if self.profile is not None:
                 self.profile.set_high_score(self.state.high_score)
 

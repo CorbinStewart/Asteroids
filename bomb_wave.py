@@ -116,6 +116,8 @@ class BombController:
             if wave.has_processed(asteroid):
                 continue
             wave.mark_processed(asteroid)
+            if hasattr(state, "asteroids_destroyed"):
+                state.asteroids_destroyed += 1
             score_manager.add_asteroid_points(asteroid)
             spawn_pickups_from_split(asteroid, state, rng, pickups)
             if asteroid.radius <= ASTEROID_MIN_RADIUS:

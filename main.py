@@ -15,8 +15,9 @@ from bomb_wave import BombController
 from screen_shake import ScreenShake
 from bomb_pickup import BombPickup, spawn_pickups_from_split
 from profile_manager import ProfileManager
+from run_summary import show_run_summary
 
-def main():
+def main() -> bool:
     print("Starting Asteroids!")
     print(f"Screen width: {SCREEN_WIDTH}")
     print(f"Screen height: {SCREEN_HEIGHT}")
@@ -39,7 +40,9 @@ def main():
 
     state = GameState()
     state.high_score = profile.high_score
+    state.initial_high_score = profile.high_score
     state.leaderboard = profile.leaderboard().copy()
+    state.apply_settings(profile.settings())
     score_manager = ScoreManager(state, profile)
     hud = Hud()
 
@@ -71,7 +74,7 @@ def main():
     level_manager = LevelManager(state, asteroid_field, score_manager)
     level_manager.configure_level(state.level_index)
 
-    def finalize_run(level_completed: bool = False) -> None:
+    def finalize_run(level_completed: bool = False) -> bool:
         if state.score > 0:
             profile.submit_score(
                 profile.settings().get("player_name", "ACE"),
@@ -79,7 +82,14 @@ def main():
                 state.level_index + 1,
             )
             state.leaderboard = profile.leaderboard().copy()
+        profile.record_milestones(
+            asteroids_destroyed=getattr(state, "asteroids_destroyed", 0),
+            bombs_used=state.bombs_used,
+            pickups_collected=state.pickups_collected,
+            time_survived=state.run_time,
+        )
         profile.save()
+        return show_run_summary(screen, state, profile, level_completed)
 
     try:
         # Gameplay loop
@@ -87,111 +97,116 @@ def main():
             # Close app window
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    finalize_run()
-                    return
-            if event.type == pygame.KEYDOWN and player.is_invulnerable:
-                player.force_invulnerability_fade()
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_b:
-                if state.use_bomb():
-                    pygame.event.post(
-                        pygame.event.Event(
-                            BOMB_TRIGGER_EVENT,
-                            {"origin": (player.position.x, player.position.y)},
+                    restart_requested = finalize_run()
+                    return restart_requested
+                if event.type == pygame.KEYDOWN and player.is_invulnerable:
+                    player.force_invulnerability_fade()
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_b:
+                    if state.use_bomb():
+                        pygame.event.post(
+                            pygame.event.Event(
+                                BOMB_TRIGGER_EVENT,
+                                {"origin": (player.position.x, player.position.y)},
+                            )
                         )
+                if event.type == BOMB_TRIGGER_EVENT:
+                    data = event.dict
+                    origin_tuple = data.get("origin")
+                    if origin_tuple is not None:
+                        origin = pygame.Vector2(origin_tuple)
+                    else:
+                        origin = pygame.Vector2(player.position)
+                    bomb_controller.trigger(origin)
+                    screen_shake.start(
+                        BOMB_SHAKE_DURATION, BOMB_SHAKE_STRENGTH * state.screen_shake_scale
                     )
-            if event.type == BOMB_TRIGGER_EVENT:
-                data = event.dict
-                origin_tuple = data.get("origin")
-                if origin_tuple is not None:
-                    origin = pygame.Vector2(origin_tuple)
-                else:
-                    origin = pygame.Vector2(player.position)
-                bomb_controller.trigger(origin)
-                screen_shake.start(BOMB_SHAKE_DURATION, BOMB_SHAKE_STRENGTH)
-                state.trigger_bomb_flash(BOMB_HUD_FLASH_DURATION)
+                    state.trigger_bomb_flash(BOMB_HUD_FLASH_DURATION)
 
-        # Set background colour    
-        world_surface.fill("black")
+            # Set background colour    
+            world_surface.fill("black")
 
-        rng = random.Random()
+            rng = random.Random()
 
-        # Updating group postion
-        bomb_controller.update(dt)
-        bomb_controller.apply_wave_effects(asteroids, score_manager, state, pickups, rng)
-        scaled_dt = game_clock.scale_dt(dt)
-        updatable.update(scaled_dt)
+            # Updating group postion
+            bomb_controller.update(dt)
+            bomb_controller.apply_wave_effects(asteroids, score_manager, state, pickups, rng)
+            scaled_dt = game_clock.scale_dt(dt)
+            updatable.update(scaled_dt)
 
-        # Checking for player collision
-        player_hit = False
-        if not player.is_invulnerable:
-            for ast in asteroids:
-                if player.collision_check(ast):
-                    player_hit = True
-                    break
+            # Checking for player collision
+            player_hit = False
+            if not player.is_invulnerable:
+                for ast in asteroids:
+                    if player.collision_check(ast):
+                        player_hit = True
+                        break
 
-        if player_hit:
-            state.lose_life()
-            if state.lives <= 0:
-                print("Game over!")
-                finalize_run()
-                return
-            player.reset(spawn_x, spawn_y)
+            if player_hit:
+                state.lose_life()
+                if state.lives <= 0:
+                    print("Game over!")
+                    restart_requested = finalize_run()
+                    return restart_requested
+                player.reset(spawn_x, spawn_y)
 
-        # Checking for bullet collision
-        for ast in list(asteroids):
-            for shot in list(shots):
-                if ast.collision_check(shot):
-                    score_manager.add_asteroid_points(ast)
-                    spawn_pickups_from_split(ast, state, rng, pickups)
-                    ast.split()
+            # Checking for bullet collision
+            for ast in list(asteroids):
+                for shot in list(shots):
+                    if ast.collision_check(shot):
+                        score_manager.add_asteroid_points(ast)
+                        spawn_pickups_from_split(ast, state, rng, pickups)
+                        state.asteroids_destroyed += 1
+                        ast.split()
+                        shot.kill()
+
+            state.update(scaled_dt)
+
+            level_manager.update(scaled_dt)
+
+            if level_manager.should_start_transition():
+                if not level_manager.levels_remaining():
+                    print("All levels cleared! You win!")
+                    restart_requested = finalize_run(level_completed=True)
+                    return restart_requested
+                level_manager.apply_level_completion()
+                next_level = state.level_index + 1
+                player.reset(spawn_x, spawn_y)
+                for shot in shots:
                     shot.kill()
-
-        state.update(scaled_dt)
-
-        level_manager.update(scaled_dt)
-
-        if level_manager.should_start_transition():
-            if not level_manager.levels_remaining():
-                print("All levels cleared! You win!")
-                finalize_run(level_completed=True)
-                return
-            level_manager.apply_level_completion()
-            next_level = state.level_index + 1
-            player.reset(spawn_x, spawn_y)
-            for shot in shots:
-                shot.kill()
-            level_manager.start_transition(next_level)
+                level_manager.start_transition(next_level)
 
 
-        # Drawing the group position
-        for spr in drawable:
-            spr.draw(world_surface)
-        for pickup in list(pickups):
-            pickup.update(scaled_dt)
-            if pickup.collides_with(player.position, player.radius):
-                score_manager.add_bombs(1)
-                state.trigger_bomb_flash(BOMB_HUD_FLASH_DURATION)
-                pickup.kill()
-                continue
-            pickup.draw(world_surface)
+            # Drawing the group position
+            for spr in drawable:
+                spr.draw(world_surface)
+            for pickup in list(pickups):
+                pickup.update(scaled_dt)
+                if pickup.collides_with(player.position, player.radius):
+                    score_manager.add_bombs(1)
+                    state.trigger_bomb_flash(BOMB_HUD_FLASH_DURATION)
+                    state.pickups_collected += 1
+                    pickup.kill()
+                    continue
+                pickup.draw(world_surface)
 
-        bomb_controller.draw(world_surface)
+            bomb_controller.draw(world_surface)
 
-        screen_shake.update(dt)
-        offset_x, offset_y = screen_shake.offset()
-        screen.fill("black")
-        screen.blit(world_surface, (offset_x, offset_y))
+            screen_shake.update(dt)
+            offset_x, offset_y = screen_shake.offset()
+            screen.fill("black")
+            screen.blit(world_surface, (offset_x, offset_y))
 
-        hud.draw(screen, state, player, level_manager)
-        pygame.display.flip()
+            hud.draw(screen, state, player, level_manager)
+            pygame.display.flip()
 
-        #Framerate
-        dt = frame_clock.tick(60) / 1000
+            #Framerate
+            dt = frame_clock.tick(60) / 1000
     finally:
         profile.save()
-    
+    return False
 
 
 if __name__ == "__main__":
-    main()
-    
+    restart = True
+    while restart:
+        restart = main()
