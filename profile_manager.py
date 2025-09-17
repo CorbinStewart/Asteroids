@@ -8,7 +8,7 @@ from typing import Any, Dict
 
 SAVE_DIR = Path("save")
 PROFILE_FILE = SAVE_DIR / "profile.json"
-CURRENT_VERSION = 1
+CURRENT_VERSION = 2
 
 
 DEFAULT_PROFILE: Dict[str, Any] = {
@@ -87,8 +87,48 @@ class ProfileManager:
         self.data["version"] = CURRENT_VERSION
 
     def _migrate(self, loaded: Dict[str, Any], version: Any) -> Dict[str, Any]:
-        # Future version handling; currently just reset to defaults
-        return json.loads(json.dumps(DEFAULT_PROFILE))
+        data = json.loads(json.dumps(loaded))
+        try:
+            current = int(version) if version is not None else 0
+        except (TypeError, ValueError):
+            current = 0
+
+        if current < 1:
+            data = self._migrate_v0_to_v1(data)
+            current = 1
+        if current < 2:
+            data = self._migrate_v1_to_v2(data)
+            current = 2
+        data["version"] = CURRENT_VERSION
+        return data
+
+    @staticmethod
+    def _migrate_v0_to_v1(data: Dict[str, Any]) -> Dict[str, Any]:
+        # Ensure scores/settings containers exist even if the original file lacked them
+        scores = data.setdefault("scores", {})
+        scores.setdefault("high_score", 0)
+        scores.setdefault("leaderboard", [])
+        data.setdefault("settings", {})
+        return data
+
+    @staticmethod
+    def _migrate_v1_to_v2(data: Dict[str, Any]) -> Dict[str, Any]:
+        scores = data.setdefault("scores", {})
+        scores.setdefault(
+            "milestones",
+            {
+                "total_asteroids_destroyed": 0,
+                "total_bombs_used": 0,
+                "total_pickups_collected": 0,
+                "total_time_survived": 0.0,
+            },
+        )
+        settings = data.setdefault("settings", {})
+        settings.setdefault("music_volume", 1.0)
+        settings.setdefault("sfx_volume", 1.0)
+        settings.setdefault("screen_shake", 1.0)
+        settings.setdefault("player_name", "ACE")
+        return data
 
     @property
     def high_score(self) -> int:

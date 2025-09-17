@@ -82,7 +82,7 @@
 - ✅ **Story F4 – Settings persistence**
   - Save user preferences: audio levels, control bindings, accessibility toggles.
   - Ensure changes persist across sessions and integrate with future menu work.
-- **Story F5 – Migration & reliability tests**
+- ✅ **Story F5 – Migration & reliability tests**
   - Add tests for schema upgrades and corrupted file recovery.
   - Document backup/fallback behavior for the persistence layer.
 
