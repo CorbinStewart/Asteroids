@@ -17,6 +17,7 @@ from constants import (
     SHOT_LIFETIME,
     SHOT_RADIUS,
 )
+from audio_manager import get_audio_manager
 
 if TYPE_CHECKING:
     from pygame import Surface
@@ -114,6 +115,7 @@ class Player(CircleShape):
         velocity = pygame.Vector2(0, 1).rotate(self.rotation)
         bullet.velocity += velocity * PLAYER_SHOOT_SPEED
         self.timer = PLAYER_SHOOT_COOLDOWN
+        get_audio_manager().play_shot()
     
     # Drawing player sprite as a triangle
     def triangle(self) -> list[pygame.Vector2]:

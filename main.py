@@ -16,6 +16,7 @@ from screen_shake import ScreenShake
 from bomb_pickup import BombPickup, spawn_pickups_from_split
 from profile_manager import ProfileManager
 from run_summary import show_run_summary
+from audio_manager import get_audio_manager
 
 def main() -> bool:
     print("Starting Asteroids!")
@@ -45,6 +46,10 @@ def main() -> bool:
     state.apply_settings(profile.settings())
     score_manager = ScoreManager(state, profile)
     hud = Hud()
+    audio_manager = get_audio_manager()
+    audio_manager.set_sfx_volume(state.sfx_volume)
+    audio_manager.set_music_volume(state.music_volume)
+    audio_manager.play_level_music(state.level_index, transition_ms=int(LEVEL_MESSAGE_DURATION * 1000))
 
     dt = 0
 
@@ -75,6 +80,7 @@ def main() -> bool:
     level_manager.configure_level(state.level_index)
 
     def finalize_run(level_completed: bool = False) -> bool:
+        audio_manager.fade_out_music(800)
         if state.score > 0:
             profile.submit_score(
                 profile.settings().get("player_name", "ACE"),
@@ -117,6 +123,7 @@ def main() -> bool:
                     else:
                         origin = pygame.Vector2(player.position)
                     bomb_controller.trigger(origin)
+                    audio_manager.play_bomb()
                     screen_shake.start(
                         BOMB_SHAKE_DURATION, BOMB_SHAKE_STRENGTH * state.screen_shake_scale
                     )
@@ -130,6 +137,8 @@ def main() -> bool:
             # Updating group postion
             bomb_controller.update(dt)
             bomb_controller.apply_wave_effects(asteroids, score_manager, state, pickups, rng)
+            audio_manager.set_sfx_volume(state.sfx_volume)
+            audio_manager.set_music_volume(state.music_volume)
             scaled_dt = game_clock.scale_dt(dt)
             updatable.update(scaled_dt)
 
@@ -154,6 +163,7 @@ def main() -> bool:
                 for shot in list(shots):
                     if ast.collision_check(shot):
                         score_manager.add_asteroid_points(ast)
+                        audio_manager.play_asteroid_hit()
                         spawn_pickups_from_split(ast, state, rng, pickups)
                         state.asteroids_destroyed += 1
                         ast.split()
@@ -174,6 +184,8 @@ def main() -> bool:
                 for shot in shots:
                     shot.kill()
                 level_manager.start_transition(next_level)
+                transition_ms = int(LEVEL_MESSAGE_DURATION * 2 * 1000)
+                audio_manager.play_level_music(next_level, transition_ms=transition_ms)
 
 
             # Drawing the group position
@@ -203,6 +215,7 @@ def main() -> bool:
             dt = frame_clock.tick(60) / 1000
     finally:
         profile.save()
+        audio_manager.stop_music()
     return False
 
 

@@ -86,11 +86,10 @@
   - Add tests for schema upgrades and corrupted file recovery.
   - Document backup/fallback behavior for the persistence layer.
 
-## Epic G – Audio & FX Enhancements
-- **Story G1 – Audio manager baseline**
+- ✅ **Story G1 – Audio manager baseline**
   - Add an `audio_manager` module to centralize sound effect playback with dummy-driver fallback.
   - Hook core events (shots, asteroid hits) to play placeholder SFX.
-- **Story G2 – Dynamic music layers**
+- ✅ **Story G2 – Dynamic music layers**
   - Implement layered background music that scales with encounter intensity.
   - Adopt a naming convention for music assets (e.g., `bgm_phase01.ogg`, `bgm_boss02.ogg`) and support seamless fade-out/in between randomly selected tracks per level.
 - **Story G3 – SFX library build-out**

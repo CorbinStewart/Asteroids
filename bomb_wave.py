@@ -14,6 +14,7 @@ from constants import (
 )
 from game_clock import GameClock
 from bomb_pickup import spawn_pickups_from_split
+from audio_manager import get_audio_manager
 
 if TYPE_CHECKING:
     from asteroid import Asteroid
@@ -119,6 +120,7 @@ class BombController:
             if hasattr(state, "asteroids_destroyed"):
                 state.asteroids_destroyed += 1
             score_manager.add_asteroid_points(asteroid)
+            get_audio_manager().play_asteroid_hit()
             spawn_pickups_from_split(asteroid, state, rng, pickups)
             if asteroid.radius <= ASTEROID_MIN_RADIUS:
                 asteroid.kill()
