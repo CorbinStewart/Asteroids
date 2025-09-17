@@ -14,6 +14,7 @@ from game_clock import GameClock
 from bomb_wave import BombController
 from screen_shake import ScreenShake
 from bomb_pickup import BombPickup, spawn_pickups_from_split
+from profile_manager import ProfileManager
 
 def main():
     print("Starting Asteroids!")
@@ -33,8 +34,12 @@ def main():
     screen_shake = ScreenShake()
     world_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
 
+    profile = ProfileManager()
+    profile.load()
+
     state = GameState()
-    score_manager = ScoreManager(state)
+    state.high_score = profile.high_score
+    score_manager = ScoreManager(state, profile)
     hud = Hud()
 
     dt = 0
@@ -65,12 +70,23 @@ def main():
     level_manager = LevelManager(state, asteroid_field, score_manager)
     level_manager.configure_level(state.level_index)
 
-    # Gameplay loop
-    while True:
-        # Close app window
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                return
+    def finalize_run(level_completed: bool = False) -> None:
+        if state.score > 0:
+            profile.submit_score(
+                state.score,
+                state.level_index + 1,
+                state.bombs_used,
+            )
+        profile.save()
+
+    try:
+        # Gameplay loop
+        while True:
+            # Close app window
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    finalize_run()
+                    return
             if event.type == pygame.KEYDOWN and player.is_invulnerable:
                 player.force_invulnerability_fade()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_b:
@@ -115,6 +131,7 @@ def main():
             state.lose_life()
             if state.lives <= 0:
                 print("Game over!")
+                finalize_run()
                 return
             player.reset(spawn_x, spawn_y)
 
@@ -134,6 +151,7 @@ def main():
         if level_manager.should_start_transition():
             if not level_manager.levels_remaining():
                 print("All levels cleared! You win!")
+                finalize_run(level_completed=True)
                 return
             level_manager.apply_level_completion()
             next_level = state.level_index + 1
@@ -167,6 +185,8 @@ def main():
 
         #Framerate
         dt = frame_clock.tick(60) / 1000
+    finally:
+        profile.save()
     
 
 

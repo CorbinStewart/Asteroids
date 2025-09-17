@@ -73,7 +73,7 @@
   - Define a versioned save schema (JSON or similar) for scores, run stats, and settings.
   - Implement load/update/save helpers with safe defaults when files are missing or corrupt.
   - Document schema versions and upgrade helpers so future migrations remain straightforward.
-- **Story F2 – Leaderboards & HUD surfacing**
+- ✅ **Story F2 – Leaderboards & HUD surfacing**
   - Track a local leaderboard (top N scores) with metadata such as level reached and bomb usage.
   - Surface personal bests in the HUD or between-level banner (“New high score!”).
 - **Story F3 – Meta progression hooks**

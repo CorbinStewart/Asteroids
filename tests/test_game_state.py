@@ -60,6 +60,7 @@ def test_bombs_initialise_and_consume():
     assert state.bombs == PLAYER_START_BOMBS
     assert state.use_bomb() is True
     assert state.bombs == PLAYER_START_BOMBS - 1
+    assert state.bombs_used == 1
 
 
 def test_use_bomb_returns_false_when_empty():

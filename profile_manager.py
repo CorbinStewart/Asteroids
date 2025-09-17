@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import json
-import os
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Dict
 
@@ -15,7 +15,7 @@ DEFAULT_PROFILE: Dict[str, Any] = {
     "version": CURRENT_VERSION,
     "scores": {
         "high_score": 0,
-        "high_scores": [],  # future: list of entries with score, level, timestamp
+        "leaderboard": [],  # list of dicts: {"score": int, "level": int, "timestamp": str}
     },
     "settings": {
         "music_volume": 1.0,
@@ -84,3 +84,20 @@ class ProfileManager:
 
     def settings(self) -> Dict[str, Any]:
         return self.data.setdefault("settings", {})
+
+    def leaderboard(self) -> list[Dict[str, Any]]:
+        return self.data.setdefault("scores", {}).setdefault("leaderboard", [])
+
+    def submit_score(self, score: int, level: int, bombs_used: int = 0, limit: int = 10) -> None:
+        entry = {
+            "score": max(0, int(score)),
+            "level": max(0, int(level)),
+            "bombs_used": max(0, int(bombs_used)),
+            "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
+        }
+        board = self.leaderboard()
+        board.append(entry)
+        board.sort(key=lambda e: e.get("score", 0), reverse=True)
+        del board[limit:]
+        if entry["score"] > self.high_score:
+            self.set_high_score(entry["score"])

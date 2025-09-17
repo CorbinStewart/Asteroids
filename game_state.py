@@ -19,6 +19,8 @@ class GameState:
     life_lost_this_level: bool = False
     bomb_flash_timer: float = 0.0
     bomb_cap: int = 5
+    bombs_used: int = 0
+    high_score_flash_timer: float = 0.0
 
     def reset_for_level(self, level_index: int) -> None:
         """Prepare state for the given level."""
@@ -48,6 +50,7 @@ class GameState:
         if not self.can_use_bomb():
             return False
         self.bombs -= 1
+        self.bombs_used += 1
         return True
 
     def add_bombs(self, count: int = 1) -> None:
@@ -58,6 +61,9 @@ class GameState:
     def trigger_bomb_flash(self, duration: float) -> None:
         self.bomb_flash_timer = max(self.bomb_flash_timer, duration)
 
+    def trigger_high_score_flash(self, duration: float) -> None:
+        self.high_score_flash_timer = max(self.high_score_flash_timer, duration)
+
     def update(self, dt: float) -> None:
         if self.life_loss_active:
             self.life_loss_elapsed += dt
@@ -66,3 +72,5 @@ class GameState:
                 self.life_loss_elapsed = 0.0
         if self.bomb_flash_timer > 0:
             self.bomb_flash_timer = max(0.0, self.bomb_flash_timer - dt)
+        if self.high_score_flash_timer > 0:
+            self.high_score_flash_timer = max(0.0, self.high_score_flash_timer - dt)

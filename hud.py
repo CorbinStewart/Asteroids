@@ -208,6 +208,11 @@ class Hud:
             format_score(state.high_score),
             self.font_regular,
         )
+        if state.high_score_flash_timer > 0:
+            label = self.font_subheader.render("NEW!", True, (255, 220, 80))
+            label_rect = label.get_rect()
+            label_rect.midtop = (hi_section.centerx, hi_section.top + 36)
+            surface.blit(label, label_rect)
 
         self._draw_value_panel(
             surface,

@@ -44,3 +44,20 @@ def test_save_creates_directory(tmp_path: Path):
     assert path.exists()
     data = json.loads(path.read_text())
     assert data["scores"]["high_score"] == 42
+
+
+def test_submit_score_updates_leaderboard(tmp_path: Path):
+    path = tmp_path / "profile.json"
+    manager = ProfileManager(path=path)
+    manager.submit_score(500, 2, bombs_used=1)
+    manager.submit_score(1200, 4, bombs_used=0)
+    manager.submit_score(800, 3, bombs_used=2)
+    manager.save()
+
+    reloaded = ProfileManager(path=path)
+    reloaded.load()
+    board = reloaded.leaderboard()
+    assert board[0]["score"] == 1200
+    assert board[1]["score"] == 800
+    assert "timestamp" in board[0]
+    assert reloaded.high_score == 1200

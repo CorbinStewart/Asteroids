@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
-from constants import LEVEL_CLEAR_BONUS
+from constants import LEVEL_CLEAR_BONUS, HIGH_SCORE_FLASH_DURATION
 from game_state import GameState
 
 
@@ -15,6 +15,7 @@ class AsteroidScoring(Protocol):
 @dataclass
 class ScoreManager:
     state: GameState
+    profile: "ProfileManager" | None = None
 
     def add_points(self, amount: int) -> None:
         if amount <= 0:
@@ -22,6 +23,9 @@ class ScoreManager:
         self.state.score += amount
         if self.state.score > self.state.high_score:
             self.state.high_score = self.state.score
+            self.state.trigger_high_score_flash(HIGH_SCORE_FLASH_DURATION)
+            if self.profile is not None:
+                self.profile.set_high_score(self.state.high_score)
 
     def add_asteroid_points(self, asteroid: "AsteroidScoring") -> None:
         self.add_points(asteroid.score_value())
