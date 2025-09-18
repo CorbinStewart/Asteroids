@@ -57,3 +57,4 @@ def test_fx_manager_bomb_activation_and_pickup_fx():
     offset = manager.offset()
     assert isinstance(offset, tuple)
     assert len(offset) == 2
+    assert not manager._powerup_effects

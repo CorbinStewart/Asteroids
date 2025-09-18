@@ -1,7 +1,19 @@
 import random
 
 import pygame
-from constants import *
+from constants import (
+    BOMB_HUD_FLASH_DURATION,
+    BOMB_SHAKE_DURATION,
+    BOMB_SHAKE_STRENGTH,
+    BOMB_TRIGGER_EVENT,
+    LEVEL_DEFINITIONS,
+    LEVEL_MESSAGE_DURATION,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
+    STATUS_BAR_HEIGHT,
+    VOLUME_ADJUST_STEP,
+    SHAKE_ADJUST_STEP,
+)
 from player import *
 from asteroid import *
 from asteroidfield import *
@@ -106,15 +118,78 @@ def main() -> bool:
                 if event.type == pygame.QUIT:
                     restart_requested = finalize_run()
                     return restart_requested
-                if event.type == pygame.KEYDOWN and player.is_invulnerable:
-                    player.force_invulnerability_fade()
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_b:
-                    if state.use_bomb():
-                        pygame.event.post(
-                            pygame.event.Event(
-                                BOMB_TRIGGER_EVENT,
-                                {"origin": (player.position.x, player.position.y)},
+                if event.type == pygame.KEYDOWN:
+                    if player.is_invulnerable:
+                        player.force_invulnerability_fade()
+                    if event.key == pygame.K_EQUALS or event.key == pygame.K_PLUS:
+                        state.set_music_volume(state.music_volume + VOLUME_ADJUST_STEP)
+                        audio_manager.set_music_volume(state.music_volume)
+                        profile.update_settings(
+                            music_volume=state.music_volume,
+                            music_volume_previous=state.music_volume_previous,
+                        )
+                    if event.key == pygame.K_MINUS:
+                        state.set_music_volume(state.music_volume - VOLUME_ADJUST_STEP)
+                        audio_manager.set_music_volume(state.music_volume)
+                        profile.update_settings(
+                            music_volume=state.music_volume,
+                            music_volume_previous=state.music_volume_previous,
+                        )
+                    if event.key == pygame.K_0:
+                        state.toggle_music_mute()
+                        audio_manager.set_music_volume(state.music_volume)
+                        profile.update_settings(
+                            music_volume=state.music_volume,
+                            music_volume_previous=state.music_volume_previous,
+                        )
+                    if event.key == pygame.K_LEFTBRACKET:
+                        state.set_sfx_volume(state.sfx_volume - VOLUME_ADJUST_STEP)
+                        audio_manager.set_sfx_volume(state.sfx_volume)
+                        profile.update_settings(
+                            sfx_volume=state.sfx_volume,
+                            sfx_volume_previous=state.sfx_volume_previous,
+                        )
+                    if event.key == pygame.K_RIGHTBRACKET:
+                        state.set_sfx_volume(state.sfx_volume + VOLUME_ADJUST_STEP)
+                        audio_manager.set_sfx_volume(state.sfx_volume)
+                        profile.update_settings(
+                            sfx_volume=state.sfx_volume,
+                            sfx_volume_previous=state.sfx_volume_previous,
+                        )
+                    if event.key == pygame.K_BACKSLASH:
+                        state.toggle_sfx_mute()
+                        audio_manager.set_sfx_volume(state.sfx_volume)
+                        profile.update_settings(
+                            sfx_volume=state.sfx_volume,
+                            sfx_volume_previous=state.sfx_volume_previous,
+                        )
+                    if event.key == pygame.K_SEMICOLON:
+                        state.adjust_screen_shake(-SHAKE_ADJUST_STEP)
+                        profile.update_settings(screen_shake=state.screen_shake_scale)
+                    if event.key == pygame.K_QUOTE:
+                        state.adjust_screen_shake(SHAKE_ADJUST_STEP)
+                        profile.update_settings(screen_shake=state.screen_shake_scale)
+                    if event.key == pygame.K_b:
+                        if state.use_bomb():
+                            pygame.event.post(
+                                pygame.event.Event(
+                                    BOMB_TRIGGER_EVENT,
+                                    {"origin": (player.position.x, player.position.y)},
+                                )
                             )
+                    if event.key == pygame.K_m:
+                        state.toggle_music_mute()
+                        audio_manager.set_music_volume(state.music_volume)
+                        profile.update_settings(
+                            music_volume=state.music_volume,
+                            music_volume_previous=state.music_volume_previous,
+                        )
+                    if event.key == pygame.K_n:
+                        state.toggle_sfx_mute()
+                        audio_manager.set_sfx_volume(state.sfx_volume)
+                        profile.update_settings(
+                            sfx_volume=state.sfx_volume,
+                            sfx_volume_previous=state.sfx_volume_previous,
                         )
                 if event.type == BOMB_TRIGGER_EVENT:
                     data = event.dict

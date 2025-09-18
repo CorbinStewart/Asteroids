@@ -120,11 +120,21 @@ class MusicPlayer:
     def _get_sound(self, track: Path) -> pygame.mixer.Sound | None:
         sound = self._sound_cache.get(track)
         if sound is not None:
+            # Ensure cached sounds keep their native volume so channel scaling works.
+            try:
+                sound.set_volume(1.0)
+            except pygame.error:
+                pass
             return sound
         try:
             sound = pygame.mixer.Sound(track.as_posix())
-        except pygame.error:
+        except pygame.error as exc:
+            print(f"[audio] failed to load track {track.name}: {exc}")
             return None
+        try:
+            sound.set_volume(1.0)
+        except pygame.error:
+            pass
         self._sound_cache[track] = sound
         return sound
 
@@ -153,9 +163,10 @@ class MusicPlayer:
             active_channel.fadeout(fade_out_ms)
         sound = self._get_sound(track)
         if sound is None:
+            print(f"[audio] no sound available for track {track.name if track else 'unknown'}")
             return
-        sound.set_volume(self._music_volume)
-        next_channel.play(sound, loops=-1, fade_ms=fade_in_ms)
+        fade_ms = fade_in_ms if self._music_volume > 0 else 0
+        next_channel.play(sound, loops=-1, fade_ms=fade_ms)
         next_channel.set_volume(self._music_volume)
         self._active_channel = next_index
         self._current_track = track
@@ -229,7 +240,8 @@ class AudioManager:
             pygame.mixer.init()
             self.enabled = True
             return
-        except pygame.error:
+        except pygame.error as exc:
+            print(f"[audio] mixer init failed: {exc}")
             pass
         if os.environ.get("SDL_AUDIODRIVER") != _SDL_DUMMY_DRIVER:
             os.environ.setdefault("SDL_AUDIODRIVER", _SDL_DUMMY_DRIVER)
@@ -237,9 +249,11 @@ class AudioManager:
                 pygame.mixer.init()
                 self.enabled = True
                 return
-            except pygame.error:
+            except pygame.error as exc:
+                print(f"[audio] mixer retry with dummy driver failed: {exc}")
                 pass
         self.enabled = False
+        print("[audio] mixer disabled; audio features unavailable")
 
     def _register_defaults(self) -> None:
         for key, path in DEFAULT_SOUND_MAP.items():

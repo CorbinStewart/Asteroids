@@ -98,10 +98,10 @@
 - ✅ **Story G4 – Visual FX framework**
   - Introduce a reusable FX manager with particle helpers, screen shake utilities, and overlay flashes sized for future power-ups.
   - Apply effects to bombs (including outward fragment nudges), asteroid destruction, and level transitions.
-- **Story G5 – Audio & FX settings**
+- ✅ **Story G5 – Audio & FX settings**
   - Expose volume sliders (music/SFX) and screen-shake toggles, storing prefs via the persistence layer.
   - Provide temporary key shortcuts for mute/unmute before menus arrive.
-- **Story G6 – Accessibility cues**
+- ✅ **Story G6 – Accessibility cues**
   - Offer visual substitutes when audio is muted (HUD pulses, icon flashes) and document extension points.
 - **Story G7 – Reliability tests**
   - Add tests ensuring the audio manager handles missing devices and effect lifecycles clean up correctly.

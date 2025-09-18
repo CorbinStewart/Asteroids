@@ -120,9 +120,11 @@ def test_music_play_and_fade(monkeypatch) -> None:
         def __init__(self, path: str) -> None:
             self.path = path
             self.volume = None
+            self.volume_calls: list[float] = []
 
         def set_volume(self, value: float) -> None:
             self.volume = value
+            self.volume_calls.append(value)
 
     class DummyMusicChannel:
         def __init__(self, index: int, state: dict) -> None:
@@ -206,11 +208,30 @@ def test_music_play_and_fade(monkeypatch) -> None:
     manager.set_music_volume(0.2)
     assert any(abs(volume - 0.2) < 1e-6 for _, volume in state["volumes"])
 
+    manager.set_music_volume(0.0)
+    assert any(abs(volume) < 1e-6 for _, volume in state["volumes"])
+
+    manager.play_level_music(2)
+    third_play = state["plays"][-1]
+    assert third_play["fade_ms"] == 0, "Muted playback should skip fade"
+    assert state["volumes"][-1][1] == 0.0
+
+    manager.set_music_volume(0.45)
+    assert state["volumes"][-1][1] == pytest.approx(0.45, rel=1e-6)
+
     manager.fade_out_music(900)
     assert state["fadeouts"][-1][1] == 900
 
     manager.stop_music()
     assert state["stops"], "channels should stop on shutdown"
+
+    # All cached sounds should keep unity gain so channel volume drives loudness.
+    played_sounds = [entry["sound"] for entry in state["plays"]]
+    assert played_sounds
+    for sound in played_sounds:
+        assert sound.volume_calls, "Expected set_volume to be called on music sound"
+        for volume in sound.volume_calls:
+            assert pytest.approx(1.0, rel=1e-6) == volume
 
 
 def test_pitch_variants_precomputed() -> None:

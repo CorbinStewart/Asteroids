@@ -19,6 +19,12 @@ def test_reset_for_level_clears_loss_flags():
         level_asteroids_destroyed=4,
         high_score_beaten=True,
         high_score_flash_elapsed=5.0,
+        music_volume=0.8,
+        sfx_volume=0.6,
+        music_volume_previous=0.8,
+        sfx_volume_previous=0.6,
+        music_muted_flash_timer=0.3,
+        sfx_muted_flash_timer=0.1,
     )
 
     state.reset_for_level(3)
@@ -146,3 +152,63 @@ def test_apply_settings_updates_fields():
     assert state.sfx_volume == 0.8
     assert state.screen_shake_scale == 0.5
     assert state.player_name == "Pilot12345"
+    assert state.music_volume_previous == 0.2
+    assert state.sfx_volume_previous == 0.8
+    assert state.music_muted_flash_timer == 0.0
+    assert state.sfx_muted_flash_timer == 0.0
+
+
+def test_volume_helpers_clamp_and_toggle():
+    state = GameState()
+
+    state.set_music_volume(1.5)
+    assert state.music_volume == 1.0
+    assert state.music_volume_previous == 1.0
+    state.toggle_music_mute()
+    assert state.music_volume == 0.0
+    timer_after_mute = state.music_muted_flash_timer
+    assert timer_after_mute > 0
+    state.update(0.2)
+    assert state.music_muted_flash_timer < timer_after_mute
+    state.toggle_music_mute()
+    assert state.music_volume == 1.0
+    assert state.music_muted_flash_timer == 0.0
+
+    state.set_sfx_volume(-0.5)
+    assert state.sfx_volume == 0.0
+    state.set_sfx_volume(0.4)
+    assert state.sfx_volume == 0.4
+    state.toggle_sfx_mute()
+    assert state.sfx_volume == 0.0
+    timer_after_sfx_mute = state.sfx_muted_flash_timer
+    assert timer_after_sfx_mute > 0
+    state.update(0.2)
+    assert state.sfx_muted_flash_timer < timer_after_sfx_mute
+    state.toggle_sfx_mute()
+    assert state.sfx_volume == 0.4
+    assert state.sfx_muted_flash_timer == 0.0
+
+
+def test_screen_shake_adjustment():
+    state = GameState(screen_shake_scale=0.5)
+    state.adjust_screen_shake(0.3)
+    assert state.screen_shake_scale == 0.8
+    state.adjust_screen_shake(0.5)
+    assert state.screen_shake_scale == 1.0
+    state.adjust_screen_shake(-2.0)
+    assert state.screen_shake_scale == 0.0
+
+
+def test_apply_settings_preserves_previous_volume_when_muted():
+    state = GameState()
+    settings = {
+        "music_volume": 0.0,
+        "music_volume_previous": 0.45,
+        "sfx_volume": 0.0,
+        "sfx_volume_previous": 0.35,
+    }
+    state.apply_settings(settings)
+    assert state.music_volume == 0.0
+    assert state.music_volume_previous == 0.45
+    assert state.sfx_volume == 0.0
+    assert state.sfx_volume_previous == 0.35

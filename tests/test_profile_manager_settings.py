@@ -17,13 +17,22 @@ def test_update_settings_clamps_and_truncates(tmp_path):
 def test_settings_persist_across_save(tmp_path):
     path = tmp_path / "profile.json"
     manager = ProfileManager(path=path)
-    manager.update_settings(music_volume=0.25, sfx_volume=0.5, screen_shake=0.1, player_name="Ace")
+    manager.update_settings(
+        music_volume=0.25,
+        music_volume_previous=0.4,
+        sfx_volume=0.5,
+        sfx_volume_previous=0.6,
+        screen_shake=0.1,
+        player_name="Ace",
+    )
     manager.save()
 
     reloaded = ProfileManager(path=path)
     reloaded.load()
     settings = reloaded.settings()
     assert settings["music_volume"] == 0.25
+    assert settings["music_volume_previous"] == 0.4
     assert settings["sfx_volume"] == 0.5
+    assert settings["sfx_volume_previous"] == 0.6
     assert settings["screen_shake"] == 0.1
     assert settings["player_name"] == "Ace"

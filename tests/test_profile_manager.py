@@ -12,6 +12,7 @@ def test_load_missing_file_uses_defaults(tmp_path: Path):
     assert manager.high_score == 0
     assert manager.data["version"] == CURRENT_VERSION
     assert manager.data["settings"]["music_volume"] == DEFAULT_PROFILE["settings"]["music_volume"]
+    assert manager.data["settings"]["music_volume_previous"] == DEFAULT_PROFILE["settings"]["music_volume_previous"]
 
 
 def test_save_and_reload_profile(tmp_path: Path):

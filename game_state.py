@@ -6,6 +6,7 @@ from constants import (
     PLAYER_START_BOMBS,
     PLAYER_START_LIVES,
     HIGH_SCORE_FLASH_PERIOD,
+    MUTED_FLASH_PERIOD,
 )
 
 
@@ -40,6 +41,10 @@ class GameState:
     sfx_volume: float = 1.0
     screen_shake_scale: float = 1.0
     player_name: str = "ACE"
+    music_volume_previous: float = 1.0
+    sfx_volume_previous: float = 1.0
+    music_muted_flash_timer: float = 0.0
+    sfx_muted_flash_timer: float = 0.0
 
     def reset_for_level(self, level_index: int) -> None:
         """Prepare state for the given level."""
@@ -100,14 +105,62 @@ class GameState:
             self.bomb_flash_timer = max(0.0, self.bomb_flash_timer - dt)
         if self.high_score_beaten:
             self.high_score_flash_elapsed += dt
+        if self.music_muted_flash_timer > 0:
+            self.music_muted_flash_timer = max(0.0, self.music_muted_flash_timer - dt)
+        if self.sfx_muted_flash_timer > 0:
+            self.sfx_muted_flash_timer = max(0.0, self.sfx_muted_flash_timer - dt)
         self.run_time += dt
 
     def apply_settings(self, settings: dict[str, Any]) -> None:
-        self.music_volume = _clamp(float(settings.get("music_volume", self.music_volume)), 0.0, 1.0)
-        self.sfx_volume = _clamp(float(settings.get("sfx_volume", self.sfx_volume)), 0.0, 1.0)
-        self.screen_shake_scale = _clamp(float(settings.get("screen_shake", self.screen_shake_scale)), 0.0, 1.0)
+        music = _clamp(float(settings.get("music_volume", self.music_volume)), 0.0, 1.0)
+        music_prev_setting = _clamp(float(settings.get("music_volume_previous", self.music_volume_previous)), 0.0, 1.0)
+        sfx = _clamp(float(settings.get("sfx_volume", self.sfx_volume)), 0.0, 1.0)
+        sfx_prev_setting = _clamp(float(settings.get("sfx_volume_previous", self.sfx_volume_previous)), 0.0, 1.0)
+        shake = _clamp(float(settings.get("screen_shake", self.screen_shake_scale)), 0.0, 1.0)
+        self.music_volume = music
+        self.sfx_volume = sfx
+        self.music_volume_previous = music if music > 0 else (music_prev_setting if music_prev_setting > 0 else 1.0)
+        self.sfx_volume_previous = sfx if sfx > 0 else (sfx_prev_setting if sfx_prev_setting > 0 else 1.0)
+        self.screen_shake_scale = shake
         name = str(settings.get("player_name", self.player_name)).strip() or "ACE"
         self.player_name = name[:10].rstrip() or "ACE"
+
+    def set_music_volume(self, value: float) -> None:
+        value = _clamp(value, 0.0, 1.0)
+        if value > 0:
+            self.music_volume_previous = value
+            self.music_muted_flash_timer = 0.0
+        elif value == 0.0 and self.music_volume > 0:
+            self.music_muted_flash_timer = MUTED_FLASH_PERIOD
+        self.music_volume = value
+
+    def set_sfx_volume(self, value: float) -> None:
+        value = _clamp(value, 0.0, 1.0)
+        if value > 0:
+            self.sfx_volume_previous = value
+            self.sfx_muted_flash_timer = 0.0
+        elif value == 0.0 and self.sfx_volume > 0:
+            self.sfx_muted_flash_timer = MUTED_FLASH_PERIOD
+        self.sfx_volume = value
+
+    def toggle_music_mute(self) -> None:
+        if self.music_volume > 0:
+            self.music_volume = 0.0
+            self.music_muted_flash_timer = MUTED_FLASH_PERIOD
+        else:
+            self.music_volume = self.music_volume_previous
+            self.music_muted_flash_timer = 0.0
+
+    def toggle_sfx_mute(self) -> None:
+        if self.sfx_volume > 0:
+            self.sfx_volume = 0.0
+            self.sfx_muted_flash_timer = MUTED_FLASH_PERIOD
+        else:
+            self.sfx_volume = self.sfx_volume_previous
+            self.sfx_muted_flash_timer = 0.0
+
+    def adjust_screen_shake(self, delta: float) -> None:
+        self.screen_shake_scale = _clamp(self.screen_shake_scale + delta, 0.0, 1.0)
 
     def record_bomb_use(self) -> None:
         self.bombs_used += 1

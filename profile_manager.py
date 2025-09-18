@@ -25,7 +25,9 @@ DEFAULT_PROFILE: Dict[str, Any] = {
     },
     "settings": {
         "music_volume": 1.0,
+        "music_volume_previous": 1.0,
         "sfx_volume": 1.0,
+        "sfx_volume_previous": 1.0,
         "screen_shake": 1.0,
         "player_name": "ACE",
     },
@@ -125,7 +127,9 @@ class ProfileManager:
         )
         settings = data.setdefault("settings", {})
         settings.setdefault("music_volume", 1.0)
+        settings.setdefault("music_volume_previous", 1.0)
         settings.setdefault("sfx_volume", 1.0)
+        settings.setdefault("sfx_volume_previous", 1.0)
         settings.setdefault("screen_shake", 1.0)
         settings.setdefault("player_name", "ACE")
         return data
@@ -144,8 +148,12 @@ class ProfileManager:
         settings = self.settings()
         if "music_volume" in kwargs:
             settings["music_volume"] = _clamp_float(kwargs["music_volume"], 0.0, 1.0)
+        if "music_volume_previous" in kwargs:
+            settings["music_volume_previous"] = _clamp_float(kwargs["music_volume_previous"], 0.0, 1.0)
         if "sfx_volume" in kwargs:
             settings["sfx_volume"] = _clamp_float(kwargs["sfx_volume"], 0.0, 1.0)
+        if "sfx_volume_previous" in kwargs:
+            settings["sfx_volume_previous"] = _clamp_float(kwargs["sfx_volume_previous"], 0.0, 1.0)
         if "screen_shake" in kwargs:
             settings["screen_shake"] = _clamp_float(kwargs["screen_shake"], 0.0, 1.0)
         if "player_name" in kwargs:

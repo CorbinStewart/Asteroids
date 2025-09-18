@@ -24,6 +24,8 @@ from constants import (
     SCREEN_HEIGHT,
     LEVEL_MESSAGE_DURATION,
     HIGH_SCORE_FLASH_PERIOD,
+    HUD_SMALL_FONT_SIZE,
+    MUTED_FLASH_PERIOD,
 )
 from hud_icons import TriangleIcon, SquareIcon, BombIcon
 from utils import create_star_field, format_score
@@ -44,6 +46,9 @@ class Hud:
         self.font_regular = load_font(ORBITRON_FONT_PATH, HUD_FONT_SIZE)
         self.font_subheader = load_font(ORBITRON_FONT_PATH, SUBHEADER_FONT_SIZE)
         self.font_semibold = load_font(ORBITRON_SEMIBOLD_FONT_PATH, HEADER_FONT_SIZE)
+        self.font_small = load_font(ORBITRON_FONT_PATH, HUD_SMALL_FONT_SIZE)
+        mute_font_size = max(10, HUD_SMALL_FONT_SIZE - 2)
+        self.font_mute = load_font(ORBITRON_FONT_PATH, mute_font_size)
         self.hud_shadow_color = pygame.Color(120, 160, 255, 70)
         self.hud_text_color = pygame.Color(255, 255, 255, 220)
         self.section_border_color: Tuple[int, int, int, int] = (255, 255, 255, 40)
@@ -253,3 +258,61 @@ class Hud:
                     alpha,
                     (player.position.y + SCREEN_HEIGHT) / 2,
                 )
+
+        self._draw_mute_indicators(surface, state, level_section)
+
+    def _draw_mute_indicators(
+        self,
+        surface: "Surface",
+        state: "GameState",
+        level_rect: pygame.Rect,
+    ) -> None:
+        messages: list[tuple[str, float]] = []
+        if state.music_volume <= 0:
+            messages.append(("MUSIC MUTED", state.music_muted_flash_timer))
+        if state.sfx_volume <= 0:
+            messages.append(("SFX MUTED", state.sfx_muted_flash_timer))
+        if not messages:
+            return
+
+        badge_height = 20
+        padding = 8
+        badge_width = 108
+        count = len(messages)
+        total_width = count * badge_width + (count - 1) * padding
+        start_x = level_rect.left + (level_rect.width - total_width) // 2
+        margin = 6
+        if start_x < level_rect.left + margin:
+            start_x = level_rect.left + margin
+        max_start = level_rect.right - margin - total_width
+        if start_x > max_start:
+            start_x = max_start
+        y = level_rect.top + 4
+        for label, flash_timer in messages:
+            ratio = 0.0
+            if MUTED_FLASH_PERIOD > 0:
+                ratio = min(1.0, max(0.0, flash_timer / MUTED_FLASH_PERIOD))
+            base_alpha = 150
+            highlight = int(90 * ratio)
+            fill_alpha = min(255, base_alpha + highlight)
+            stroke_alpha = min(255, 170 + highlight)
+            background = pygame.Surface((badge_width, badge_height), pygame.SRCALPHA)
+            rect = background.get_rect()
+            pygame.draw.rect(
+                background,
+                (70, 35, 120, fill_alpha),
+                rect,
+                border_radius=10,
+            )
+            pygame.draw.rect(
+                background,
+                (180, 140, 240, stroke_alpha),
+                rect,
+                width=1,
+                border_radius=10,
+            )
+            text = self.font_mute.render(label, True, (255, 230, 255))
+            text_rect = text.get_rect(center=rect.center)
+            background.blit(text, text_rect)
+            surface.blit(background, (start_x, y))
+            start_x += badge_width + padding
