@@ -4,13 +4,13 @@ This plan captures the changes needed to transition Asteroids from the current v
 
 ## Epic N1 – Visual Style Foundations
 - **Story N1.1 – Style guide & palette**
-  - Define the core color palette (player cyan, hazard red/orange, UI violet/blue) plus neutral tones.
-  - Document line weights, glow radii, and typography usage (Orbitron hierarchy, alt font options).
-  - Produce reference mockups for HUD panel, playfield scene, and pickup icon.
+  - ✅ Define the core color palette (player cyan, hazard red/orange, UI violet/blue) plus neutral tones.
+  - ✅ Document line weights, glow radii, and typography usage (Orbitron hierarchy, alt font options).
+  - ✅ Produce reference mockups for HUD panel, playfield scene, and pickup icon.
 - **Story N1.2 – Rendering toolkit audit**
-  - Evaluate Pygame techniques for glow/bloom (additive sprites, layered surfaces, shaders via surfarray).
-  - Prototype a reusable `GlowSprite` helper that composites base geometry + glow pass.
-  - Ensure performance budget on target machines with multiple glow entities.
+  - ✅ Evaluate Pygame techniques for glow/bloom (additive sprites, layered surfaces, shaders via surfarray).
+  - ✅ Prototype a reusable `GlowSprite` helper that composites base geometry + glow pass.
+  - ✅ Ensure performance budget on target machines with multiple glow entities.
 
 ## Epic N2 – HUD & UI Rework
 - **Story N2.1 – HUD panel redesign**
@@ -74,8 +74,8 @@ This plan captures the changes needed to transition Asteroids from the current v
 
 ## Epic N8 – Implementation Logistics
 - **Story N8.1 – Asset pipeline**
-  - Organize art & SFX assets (textures, glow masks, particle sprites) under `assets/` by category.
-  - Document export settings (PNG with transparent glow alpha, recommended sizes).
+  - ✅ Organize art & SFX assets (textures, glow masks, particle sprites) under `assets/` by category.
+  - ✅ Document export settings (PNG with transparent glow alpha, recommended sizes).
 - **Story N8.2 – Performance & scalability**
   - Profile new effects; add options for low/high fidelity modes.
   - Ensure fallback rendering path (no glow) for low-end machines.

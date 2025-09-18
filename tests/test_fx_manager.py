@@ -58,3 +58,17 @@ def test_fx_manager_bomb_activation_and_pickup_fx():
     assert isinstance(offset, tuple)
     assert len(offset) == 2
     assert not manager._powerup_effects
+
+
+def test_fx_fireworks_cleanup() -> None:
+    manager = FXManager()
+
+    manager.start_fireworks(duration=0.4, interval=0.05)
+    manager.update(0.05)
+    assert manager._particles, "fireworks should spawn particles"
+
+    manager.update(0.6)
+    manager.update(1.2)
+
+    assert not manager._particles
+    assert manager._fireworks_timer == 0.0

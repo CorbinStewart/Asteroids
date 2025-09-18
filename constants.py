@@ -21,6 +21,37 @@ STATUS_BAR_HEIGHT = 96
 STATUS_BAR_TOP_COLOR = (13, 16, 32)
 STATUS_BAR_BOTTOM_COLOR = (5, 6, 13)
 
+# Neon palette scaffolding for upcoming visual overhaul.
+NEON_COLORS = {
+    "player_primary": (77, 243, 255),
+    "player_inner_glow": (27, 208, 232),
+    "player_highlight": (180, 255, 255),
+    "hazard_primary": (255, 58, 126),
+    "hazard_secondary": (255, 156, 42),
+    "hazard_highlight": (255, 206, 120),
+    "hud_frame": (86, 18, 255),
+    "hud_fill": (43, 15, 94),
+    "hud_shadow": (25, 17, 35),
+    "neutral_base": (5, 7, 11),
+    "neutral_mid": (23, 26, 38),
+    "highlight_text": (208, 181, 255),
+}
+
+NEON_LINE_WEIGHTS = {
+    "micro": 1,
+    "core": 3,
+    "hud_outer": 2,
+    "hud_inner": 1,
+}
+
+NEON_GLOW_RADII = {
+    "micro": 3,
+    "core": 8,
+    "hud_outer": 6,
+    "hud_inner": 2,
+    "event": 18,
+}
+
 PLAYER_START_LIVES = 3
 PLAYER_START_BOMBS = 3
 PLAYER_RESPAWN_INVULNERABILITY = 5.0

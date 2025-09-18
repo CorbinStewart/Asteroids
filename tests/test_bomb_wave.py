@@ -2,6 +2,7 @@ import random
 
 import pygame
 
+import bomb_wave as bomb_wave_module
 from bomb_wave import BombController, BombWave
 from game_clock import GameClock
 from constants import (
@@ -119,3 +120,45 @@ def test_wave_can_spawn_pickup_when_drop_occurs():
 
     assert len(pickups) == 1
     assert state.asteroids_destroyed == 1
+
+
+def test_wave_triggers_audio_and_fx_hooks(monkeypatch):
+    clock = GameClock()
+    controller = BombController(clock)
+    state = GameState()
+    score = ScoreManager(state)
+    asteroids = _setup_asteroid_groups()
+    pickups = pygame.sprite.Group()
+    rng = random.Random(42)
+
+    Asteroid(0, 0, ASTEROID_MIN_RADIUS * 3)
+
+    class DummyAudio:
+        def __init__(self) -> None:
+            self.asteroid_hits = 0
+
+        def play_asteroid_hit(self) -> None:
+            self.asteroid_hits += 1
+
+    class DummyFX:
+        def __init__(self) -> None:
+            self.explosions: list[tuple[tuple[float, float], float]] = []
+
+        def spawn_asteroid_explosion(self, position: pygame.Vector2, radius: float) -> None:
+            self.explosions.append(((position.x, position.y), radius))
+
+    dummy_audio = DummyAudio()
+    dummy_fx = DummyFX()
+
+    monkeypatch.setattr(bomb_wave_module, "get_audio_manager", lambda: dummy_audio)
+
+    controller.trigger(pygame.Vector2(0, 0))
+    controller.update(BOMB_WAVE_DURATION * 0.5)
+    controller.apply_wave_effects(asteroids, score, state, pickups, rng, fx_manager=dummy_fx)
+
+    assert dummy_audio.asteroid_hits == 1
+    assert len(dummy_fx.explosions) == 1
+    # Running again during the same wave should not double-trigger for spawned fragments.
+    controller.apply_wave_effects(asteroids, score, state, pickups, rng, fx_manager=dummy_fx)
+    assert dummy_audio.asteroid_hits == 1
+    assert len(dummy_fx.explosions) == 1

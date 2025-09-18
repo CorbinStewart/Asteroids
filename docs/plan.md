@@ -103,17 +103,17 @@
   - Provide temporary key shortcuts for mute/unmute before menus arrive.
 - ✅ **Story G6 – Accessibility cues**
   - Offer visual substitutes when audio is muted (HUD pulses, icon flashes) and document extension points.
-- **Story G7 – Reliability tests**
+- ✅ **Story G7 – Reliability tests**
   - Add tests ensuring the audio manager handles missing devices and effect lifecycles clean up correctly.
   - Verify event triggers hit the expected audio/FX hooks.
 
 ## Epic H – Menus & Settings Experience
 - **Story H1 – State manager & title screen**
-  - Introduce a lightweight state machine (title, gameplay, pause, settings).
-  - Build an animated title screen with a “Press Start” prompt and high-score preview.
+  - ✅ Introduce a lightweight state machine (title, gameplay, pause, settings).
+  - ⬜ Build an animated title screen with a “Press Start” prompt and high-score preview.
 - **Story H2 – Pause overlay**
-  - Add a translucent pause menu showing resume/restart/quit options plus current run stats.
-  - Ensure gameplay freezes cleanly and resumes without side effects.
+  - ✅ Ensure gameplay freezes cleanly and resumes without side effects.
+  - ⬜ Add a translucent pause menu showing resume/restart/quit options plus current run stats.
 - ✅ **Story H3 – Run summary screen**
   - Present a post-run breakdown (score, best combo, time survived, bombs detonated, pickups collected) before returning to the title screen.
   - Trigger persistence hooks from Epic F to record leaderboard entries and milestones.
@@ -123,6 +123,9 @@
 - **Story H5 – Audio & display settings**
   - Hook sliders to music/SFX volume and screen-shake intensity; persist changes via the save layer.
   - Provide instant feedback as users adjust values.
+- **Story H5a – Display mode options**
+  - Allow switching between windowed, windowed-borderless, and fullscreen.
+  - Expose common resolution presets (1280×720 baseline, 1600×900, 1920×1080) and persist selection.
 - **Story H6 – Control bindings**
   - Allow keyboard remapping with conflict detection and “reset to default” support (gamepad deferred to a future story).
   - Update input handling to respect custom bindings.

@@ -1,3 +1,5 @@
+import os
+
 import pygame
 import pytest
 
@@ -250,3 +252,50 @@ def test_pitch_variants_precomputed() -> None:
     for factor in off_unity:
         rounded = round(factor, 3)
         assert (id(entry.sound), rounded) in cache_keys
+
+
+def test_audio_manager_promotes_dummy_driver_when_device_missing(monkeypatch) -> None:
+    call_order: list[str | None] = []
+
+    def fake_get_init() -> bool:
+        return len(call_order) >= 2
+
+    def fake_init() -> None:
+        call_order.append(os.environ.get("SDL_AUDIODRIVER"))
+        if len(call_order) == 1:
+            raise pygame.error("No audio device")
+
+    class DummyMusicChannel:
+        def __init__(self) -> None:
+            self.volume = 1.0
+
+        def set_volume(self, value: float) -> None:
+            self.volume = value
+
+        def get_busy(self) -> bool:
+            return False
+
+        def fadeout(self, ms: int) -> None:
+            pass
+
+        def stop(self) -> None:
+            pass
+
+        def play(self, sound, loops: int = -1, fade_ms: int = 0) -> None:
+            pass
+
+    monkeypatch.delenv("SDL_AUDIODRIVER", raising=False)
+    monkeypatch.setattr(pygame.mixer, "get_init", fake_get_init)
+    monkeypatch.setattr(pygame.mixer, "init", fake_init)
+    monkeypatch.setattr(pygame.mixer, "get_num_channels", lambda: 4)
+    monkeypatch.setattr(pygame.mixer, "set_num_channels", lambda value: None)
+    monkeypatch.setattr(pygame.mixer, "Channel", lambda index: DummyMusicChannel())
+    monkeypatch.setattr("audio_manager.load_sound", lambda path: DummySound())
+
+    manager = get_audio_manager()
+
+    assert manager.enabled is True
+    assert len(call_order) >= 2
+    assert call_order[0] != "dummy"
+    assert call_order[-1] == "dummy"
+    assert os.environ.get("SDL_AUDIODRIVER") == "dummy"

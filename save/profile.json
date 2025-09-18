@@ -42,9 +42,11 @@
     }
   },
   "settings": {
-    "music_volume": 0.5,
-    "sfx_volume": 1.0,
+    "music_volume": 0.0,
+    "sfx_volume": 0.0,
     "screen_shake": 1.0,
-    "player_name": "ACE"
+    "player_name": "ACE",
+    "music_volume_previous": 0.10000000000000003,
+    "sfx_volume_previous": 1.0
   }
 }
