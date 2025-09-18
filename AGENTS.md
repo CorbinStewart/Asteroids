@@ -1,22 +1,23 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-Game entry point sits in `main.py`, which boots the Pygame loop and wires together the gameplay. Core components live beside it: `player.py`, `asteroid.py`, `asteroidfield.py`, `circleshape.py`, and shared values in `constants.py`. Keep new runtime modules flat at the repository root to match the current import expectations. Place reusable assets such as sprites or sounds under `assets/` and reference them using relative paths (for example `assets/ship.png`). Tests belong in `tests/` with mirrored filenames like `tests/test_player.py`.
+Runtime modules live at the repository root to support simple imports. `main.py` boots the Pygame loop and orchestrates `GameState`, `LevelManager`, `ScoreManager`, `BombController`, the HUD, and FX/audio helpers. Core entities inherit from `circleshape.py`; gameplay actors include `player.py`, `asteroid.py`, `asteroidfield.py`, `bomb_wave.py`, and `bomb_pickup.py`. Shared values stay in `constants.py`, while reusable visuals and sounds live under `assets/`. Persisted profiles are written to `save/profile.json`. Tests mirror module names inside `tests/` (for example `tests/test_game_state.py`).
 
 ## Build, Test, and Development Commands
-- `python -m venv .venv && source .venv/bin/activate` - create and activate the local development environment.
-- `python -m pip install pygame==2.6.1` - install the only runtime dependency listed today.
-- `python main.py` - run the game with standard Python tooling.
-- `uv run python main.py` - optional helper that reads dependencies from `pyproject.toml` and launches the loop.
+- `python -m venv .venv && source .venv/bin/activate` – create/activate a local virtual environment.
+- `python -m pip install pygame==2.6.1` – install the pinned runtime dependency; add `pytest` when running tests.
+- `python main.py` – launch the game with the active interpreter.
+- `uv run python main.py` – alternative launcher that reads `pyproject.toml` dependencies.
+- `pytest -q` – execute the unit-test suite; runs headless thanks to the dummy SDL driver in `tests/conftest.py`.
 
 ## Coding Style & Naming Conventions
-Use Python 3.13 features cautiously and stick to 4-space indentation, UTF-8, and Unix newlines. Prefer small, focused modules under about 300 lines. Follow `snake_case` for variables, functions, and modules, and `PascalCase` for classes. Centralize constants in `constants.py` instead of scattering literals. Keep inline comments minimal and informative.
+Use Python 3.11+ features conservatively, four-space indentation, UTF-8, and Unix newlines. Follow `snake_case` for modules, functions, and variables, and `PascalCase` for classes. Prefer small modules (<300 lines) and keep gameplay tuning knobs in `constants.py`. Derive sprites from `CircleShape` to inherit wrapping/collision helpers. Limit inline comments to clarifying intent; rely on descriptive names instead.
 
 ## Testing Guidelines
-`pytest` is the expected framework; install it with `python -m pip install pytest` when needed. Place tests in `tests/` and name them `test_<module>.py` with functions like `test_handles_wraparound`. Keep tests deterministic and fast so they can run as part of local loops. Execute the suite via `pytest -q`.
+Tests are written with `pytest` and stored in `tests/`. Name files `test_<module>.py` and functions `test_<behavior>()`. Use deterministic randomness by seeding `random.Random` instances when asserting FX or spawn behavior. Ensure new features expose hooks that can be exercised without launching the full Pygame loop; prefer validating audio/FX through dependency injection or dummy objects.
 
 ## Commit & Pull Request Guidelines
-Write commits with imperative subjects under 72 characters (for example, "Add asteroid split logic") and add a body when explanation helps reviewers. Pull requests should describe motivation, link related issues, and explain validation steps. Include screenshots or short clips when gameplay or UI changes are visible.
+Write commits with imperative subjects under 72 characters (for example, `Add asteroid split logic`). Include a body when context or validation details aid reviewers. Pull requests should describe motivation, reference related issues, summarize validation (test commands, gameplay capture), and attach screenshots or clips for visible changes.
 
 ## Security & Configuration Tips
-Never commit secrets or local artifacts; `.venv/` is already ignored. Favor relative paths to assets to keep portability. Tune gameplay parameters in `constants.py` so designers can tweak frame rate, speeds, and spawn counts from one location.
+Do not commit secrets or local artifacts; `.venv/` and build outputs are ignored already. Use relative asset paths (`assets/sounds/...`) to keep bundles portable. Update tuning values via `constants.py` so designers can iterate without code edits. Persisted profile data is versioned—increment `CURRENT_VERSION` and supply migrations when expanding the schema.

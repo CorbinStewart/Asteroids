@@ -19,6 +19,7 @@ from audio_manager import get_audio_manager
 if TYPE_CHECKING:
     from asteroid import Asteroid
     from score_manager import ScoreManager
+    from fx_manager import FXManager
 
 
 class BombWave:
@@ -106,6 +107,7 @@ class BombController:
         state,
         pickups,
         rng: random.Random,
+        fx_manager: "FXManager" | None = None,
     ) -> None:
         wave = self.current_wave()
         if not wave:
@@ -117,9 +119,11 @@ class BombController:
             if wave.has_processed(asteroid):
                 continue
             wave.mark_processed(asteroid)
-            if hasattr(state, "asteroids_destroyed"):
-                state.asteroids_destroyed += 1
+            if hasattr(state, "record_asteroid_destroyed"):
+                state.record_asteroid_destroyed()
             score_manager.add_asteroid_points(asteroid)
+            if fx_manager is not None:
+                fx_manager.spawn_asteroid_explosion(asteroid.position, asteroid.radius)
             get_audio_manager().play_asteroid_hit()
             spawn_pickups_from_split(asteroid, state, rng, pickups)
             if asteroid.radius <= ASTEROID_MIN_RADIUS:

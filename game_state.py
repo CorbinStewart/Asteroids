@@ -26,13 +26,16 @@ class GameState:
     bomb_flash_timer: float = 0.0
     bomb_cap: int = 5
     bombs_used: int = 0
+    level_bombs_used: int = 0
     high_score_flash_elapsed: float = 0.0
     high_score_beaten: bool = False
     initial_high_score: int = 0
     leaderboard: list[dict[str, int]] = field(default_factory=list)
     run_time: float = 0.0
     pickups_collected: int = 0
+    level_pickups_collected: int = 0
     asteroids_destroyed: int = 0
+    level_asteroids_destroyed: int = 0
     music_volume: float = 1.0
     sfx_volume: float = 1.0
     screen_shake_scale: float = 1.0
@@ -46,9 +49,9 @@ class GameState:
         self.life_loss_elapsed = 0.0
         self.high_score_beaten = False
         self.high_score_flash_elapsed = 0.0
-        self.bombs_used = 0
-        self.pickups_collected = 0
-        self.asteroids_destroyed = 0
+        self.level_bombs_used = 0
+        self.level_pickups_collected = 0
+        self.level_asteroids_destroyed = 0
 
     def lose_life(self) -> None:
         if self.lives > 0:
@@ -71,7 +74,7 @@ class GameState:
         if not self.can_use_bomb():
             return False
         self.bombs -= 1
-        self.bombs_used += 1
+        self.record_bomb_use()
         return True
 
     def add_bombs(self, count: int = 1) -> None:
@@ -105,3 +108,17 @@ class GameState:
         self.screen_shake_scale = _clamp(float(settings.get("screen_shake", self.screen_shake_scale)), 0.0, 1.0)
         name = str(settings.get("player_name", self.player_name)).strip() or "ACE"
         self.player_name = name[:10].rstrip() or "ACE"
+
+    def record_bomb_use(self) -> None:
+        self.bombs_used += 1
+        self.level_bombs_used += 1
+
+    def record_pickup_collected(self) -> None:
+        self.pickups_collected += 1
+        self.level_pickups_collected += 1
+
+    def record_asteroid_destroyed(self, count: int = 1) -> None:
+        if count <= 0:
+            return
+        self.asteroids_destroyed += count
+        self.level_asteroids_destroyed += count

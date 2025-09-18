@@ -12,7 +12,7 @@ from score_manager import ScoreManager
 from hud import Hud
 from game_clock import GameClock
 from bomb_wave import BombController
-from screen_shake import ScreenShake
+from fx_manager import FXManager
 from bomb_pickup import BombPickup, spawn_pickups_from_split
 from profile_manager import ProfileManager
 from run_summary import show_run_summary
@@ -33,7 +33,7 @@ def main() -> bool:
     frame_clock = pygame.time.Clock()
     game_clock = GameClock()
     bomb_controller = BombController(game_clock)
-    screen_shake = ScreenShake()
+    fx_manager = FXManager()
     world_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
 
     profile = ProfileManager()
@@ -50,6 +50,7 @@ def main() -> bool:
     audio_manager.set_sfx_volume(state.sfx_volume)
     audio_manager.set_music_volume(state.music_volume)
     audio_manager.play_level_music(state.level_index, transition_ms=int(LEVEL_MESSAGE_DURATION * 1000))
+    music_preload_scheduled = False
 
     dt = 0
 
@@ -124,9 +125,10 @@ def main() -> bool:
                         origin = pygame.Vector2(player.position)
                     bomb_controller.trigger(origin)
                     audio_manager.play_bomb()
-                    screen_shake.start(
+                    fx_manager.shake(
                         BOMB_SHAKE_DURATION, BOMB_SHAKE_STRENGTH * state.screen_shake_scale
                     )
+                    fx_manager.spawn_bomb_activation(origin)
                     state.trigger_bomb_flash(BOMB_HUD_FLASH_DURATION)
 
             # Set background colour    
@@ -135,11 +137,19 @@ def main() -> bool:
             rng = random.Random()
 
             # Updating group postion
+            scaled_dt = game_clock.scale_dt(dt)
             bomb_controller.update(dt)
-            bomb_controller.apply_wave_effects(asteroids, score_manager, state, pickups, rng)
+            bomb_controller.apply_wave_effects(
+                asteroids,
+                score_manager,
+                state,
+                pickups,
+                rng,
+                fx_manager=fx_manager,
+            )
             audio_manager.set_sfx_volume(state.sfx_volume)
             audio_manager.set_music_volume(state.music_volume)
-            scaled_dt = game_clock.scale_dt(dt)
+            fx_manager.update(scaled_dt, dt)
             updatable.update(scaled_dt)
 
             # Checking for player collision
@@ -163,15 +173,22 @@ def main() -> bool:
                 for shot in list(shots):
                     if ast.collision_check(shot):
                         score_manager.add_asteroid_points(ast)
+                        fx_manager.spawn_asteroid_explosion(ast.position, ast.radius)
                         audio_manager.play_asteroid_hit()
                         spawn_pickups_from_split(ast, state, rng, pickups)
-                        state.asteroids_destroyed += 1
+                        state.record_asteroid_destroyed()
                         ast.split()
                         shot.kill()
 
             state.update(scaled_dt)
 
             level_manager.update(scaled_dt)
+
+            if not music_preload_scheduled and state.level_index + 1 < len(LEVEL_DEFINITIONS):
+                spawn_total = LEVEL_DEFINITIONS[state.level_index].get("spawn_total", 0)
+                if spawn_total > 0 and state.level_asteroids_destroyed >= spawn_total * 0.5:
+                    audio_manager.preload_level_music(state.level_index + 1)
+                    music_preload_scheduled = True
 
             if level_manager.should_start_transition():
                 if not level_manager.levels_remaining():
@@ -184,8 +201,10 @@ def main() -> bool:
                 for shot in shots:
                     shot.kill()
                 level_manager.start_transition(next_level)
+                fx_manager.spawn_level_transition()
                 transition_ms = int(LEVEL_MESSAGE_DURATION * 2 * 1000)
                 audio_manager.play_level_music(next_level, transition_ms=transition_ms)
+                music_preload_scheduled = False
 
 
             # Drawing the group position
@@ -196,18 +215,20 @@ def main() -> bool:
                 if pickup.collides_with(player.position, player.radius):
                     score_manager.add_bombs(1)
                     state.trigger_bomb_flash(BOMB_HUD_FLASH_DURATION)
-                    state.pickups_collected += 1
+                    state.record_pickup_collected()
+                    fx_manager.spawn_powerup_trail(player, (220, 60, 60))
                     audio_manager.play_bomb_pickup()
                     pickup.kill()
                     continue
                 pickup.draw(world_surface)
 
             bomb_controller.draw(world_surface)
+            fx_manager.draw_world(world_surface)
 
-            screen_shake.update(dt)
-            offset_x, offset_y = screen_shake.offset()
+            offset_x, offset_y = fx_manager.offset()
             screen.fill("black")
             screen.blit(world_surface, (offset_x, offset_y))
+            fx_manager.draw_overlay(screen)
 
             hud.draw(screen, state, player, level_manager)
             pygame.display.flip()

@@ -215,6 +215,11 @@ class AudioManager:
         self._music = MusicPlayer(self.enabled)
         if self.enabled:
             self._music.set_volume(1.0)
+            self._preload_music_tracks()
+
+    def _preload_music_tracks(self) -> None:
+        for track in self._music.tracks:
+            self._music._get_sound(track)
 
     def _ensure_mixer(self) -> None:
         if pygame.mixer.get_init():
@@ -384,6 +389,9 @@ class AudioManager:
         duration = 1800 if transition_ms is None else max(0, int(transition_ms))
         self._music.play_random_for_level(level_index, fade_out_ms=duration, fade_in_ms=duration)
         self._music.schedule_preload(level_index + 1)
+
+    def preload_level_music(self, level_index: int) -> None:
+        self._music.schedule_preload(level_index)
 
     def set_music_volume(self, value: float) -> None:
         self._music.set_volume(value)

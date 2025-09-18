@@ -14,6 +14,9 @@ def test_reset_for_level_clears_loss_flags():
         initial_high_score=300,
         bombs_used=3,
         pickups_collected=2,
+        level_bombs_used=2,
+        level_pickups_collected=1,
+        level_asteroids_destroyed=4,
         high_score_beaten=True,
         high_score_flash_elapsed=5.0,
     )
@@ -24,8 +27,11 @@ def test_reset_for_level_clears_loss_flags():
     assert state.life_lost_this_level is False
     assert state.life_loss_active is False
     assert state.life_loss_elapsed == 0.0
-    assert state.bombs_used == 0
-    assert state.pickups_collected == 0
+    assert state.bombs_used == 3
+    assert state.pickups_collected == 2
+    assert state.level_bombs_used == 0
+    assert state.level_pickups_collected == 0
+    assert state.level_asteroids_destroyed == 0
     assert state.high_score_beaten is False
     assert state.high_score_flash_elapsed == 0.0
     assert state.initial_high_score == 300
@@ -99,6 +105,22 @@ def test_bomb_flash_timer_counts_down():
     assert state.bomb_flash_timer == 0.5
     state.update(1.0)
     assert state.bomb_flash_timer == 0.0
+
+
+def test_record_helpers_track_totals_and_level_counts():
+    state = GameState()
+    state.record_pickup_collected()
+    state.record_asteroid_destroyed()
+    assert state.pickups_collected == 1
+    assert state.asteroids_destroyed == 1
+    assert state.level_pickups_collected == 1
+    assert state.level_asteroids_destroyed == 1
+
+    state.reset_for_level(2)
+    assert state.pickups_collected == 1
+    assert state.asteroids_destroyed == 1
+    assert state.level_pickups_collected == 0
+    assert state.level_asteroids_destroyed == 0
 
 
 def test_start_high_score_flash_sets_flag():
